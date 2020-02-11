@@ -1,0 +1,100 @@
+---
+title: "Preliminary_analysis"
+author: "Aoi Ogawa"
+date: "2/10/2020"
+output: html_document
+---
+
+```{r,include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r,include=FALSE}
+games_Smith <- read_csv("games_Smith.csv")
+pbp_Smith <- read_csv("pbp_SMith.csv")
+```
+
+```{r, include=FALSE}
+str(games_Smith)
+str(pbp_Smith)
+```
+
+
+##### Tidy data
+```{r}
+# Clean Temperature
+
+Clean_temp <- games_Smith[-c(20:23)]
+Clean_temp <- na.omit(Clean_temp)
+
+# Humidity
+Clean_humid <- games_Smith[-c(19,21:23)]
+
+Clean_humid <- na.omit(Clean_humid)
+```
+
+```{r}
+# Game time
+ggplot(games_Smith, aes(GameLength)) +
+  geom_bar()
+
+# Game temp
+ggplot(Clean_temp, aes(Temperature)) +
+  geom_bar()
+
+temp_avg <- Clean_temp %>%
+  summarise(avg = mean(Temperature))
+# avg : 59.4
+
+# Game time vs temp
+ggplot(Clean_temp, aes(x= Temperature, y = GameLength)) + 
+  geom_point()
+
+```
+```{r}
+# Game humidity
+ggplot(Clean_humid, aes(Humidity)) +
+  geom_bar()
+
+humid_avg <- Clean_humid %>%
+  summarise(avg = mean(Humidity))
+# avg : 56.5
+
+# Game time vs humid
+ggplot(Clean_humid, aes(x= Humidity, y = GameLength)) + 
+  geom_point()
+```
+
+```{r}
+#Stadium type
+
+stadium_type <- games_Smith %>%
+  group_by(StadiumType)%>%
+  summarise(num = n())
+
+```
+
+
+```{r}
+#down and distance
+
+# average
+down_dis <- pbp_Smith %>%
+  group_by(Down) %>%
+  summarise(mean_dis = mean(Distance))
+
+# the distribution
+down_disNUM <- pbp_Smith %>%
+  group_by(Down, Distance) %>%
+  summarise(num_dis = n()) 
+
+
+# Distance vs yard line?? 
+```
+
+
+
+

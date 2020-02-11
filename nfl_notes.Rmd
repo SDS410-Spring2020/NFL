@@ -1,0 +1,12 @@
+---
+title: "NFL notes"
+author: "Lizette Carpenter"
+date: "2/10/2020"
+output: html_document
+---
+
+**touchback:** a ball one downs deliberately behind one's own goal line or that is kicked through one's end zone. It is taken to the 20-yard line to resume play.
+
+**goal to go:** the situation in which an offensive team gets a first down within ten yards of the goal line, and thus cannot advance for another first down.
+
+**league codes:** https://liaison.reuters.com/tools/sports-team-codes

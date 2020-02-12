@@ -13,8 +13,8 @@ library(ggplot2)
 
 
 ```{r,include=FALSE}
-games_Smith <- read_csv("games_Smith.csv")
-pbp_Smith <- read_csv("pbp_SMith.csv")
+games_Smith <- read_csv("data/games_Smith.csv")
+pbp_Smith <- read_csv("data/pbp_SMith.csv")
 ```
 
 ```{r, include=FALSE}

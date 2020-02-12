@@ -11,7 +11,7 @@ library (tidyverse)
 ```
 
 ```{r}
-data<-read.csv("games_Smith.csv")
+data<-read.csv("data/games_Smith.csv")
 ```
 
 #Creation of DF

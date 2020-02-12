@@ -14,4 +14,13 @@ library (tidyverse)
 data<-read.csv("games_Smith.csv")
 ```
 
+#Creation of DF
+
+```{r}
+thurs<-data %>% 
+  filter(Game_Day=="Thursday")
+
+non_thurs<-data%>% 
+  filter(Game_Day!="Thursday")
+```
 

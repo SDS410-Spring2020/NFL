@@ -5,13 +5,21 @@ date: "2/12/2020"
 output: html_document
 ---
 
-```{r}
+```{r,include=FALSE}
 library(datasets)
+library(maps)
 ```
 
 ```{r}
+# name of states from datasets
 state.name
 ```
+
+```{r}
+# includes all(?) US city names from maps
+View(us.cities)
+```
+
 
 ```{r}
 # useful when mapping US?

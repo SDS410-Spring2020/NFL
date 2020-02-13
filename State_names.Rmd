@@ -1,0 +1,20 @@
+---
+title: "State_names"
+author: "Aoi Ogawa"
+date: "2/12/2020"
+output: html_document
+---
+
+```{r}
+library(datasets)
+```
+
+```{r}
+state.name
+```
+
+```{r}
+# useful when mapping US?
+library(usmap)
+```
+

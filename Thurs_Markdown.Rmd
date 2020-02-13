@@ -14,7 +14,7 @@ library (tidyverse)
 data<-read.csv("data/games_Smith.csv")
 ```
 
-#Creation of DF
+#Creation of 2 DFs (Thursday and Non Thursday)
 
 ```{r}
 thurs<-data %>% 
@@ -25,3 +25,8 @@ non_thurs<-data%>%
 
 ```
 
+#Create a binary thursday column 
+```{r}
+fulldata_with_thurs <- data %>% 
+  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
+```

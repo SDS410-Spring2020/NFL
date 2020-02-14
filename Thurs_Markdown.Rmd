@@ -11,21 +11,52 @@ library (tidyverse)
 ```
 
 ```{r}
-data<-read.csv("data/games_Smith.csv")
+games<-read.csv("data/games_Smith.csv")
+pbp<-read.csv("data/pbp_Smith.csv")
+
 ```
+
 
 #Creation of 2 DFs (Thursday and Non Thursday)
 
 ```{r}
+
+#join DF
+data<-games %>% 
+  left_join(pbp, by="GameKey")
+
+#Creation of DF
 thurs<-data %>% 
-  filter(Game_Day=="Thursday")
+  filter(Game_Day=="Thursday") %>% 
+  mutate()
 
 non_thurs<-data%>% 
   filter(Game_Day!="Thursday")
 
 ```
 
+#PLots
+```{r}
+#Game Days
+ggplot(non_thurs, aes(Game_Day))+
+  geom_histogram(stat="count")
+
+ggplot(non_thurs, aes(as.factor(Turf)))+
+  geom_bar()+
+  coord_flip()
+
+ggplot(non_thurs, aes(Temperature))+
+  geom_histogram()
+ggplot(thurs, aes(Temperature))+
+  geom_histogram()
+
+ggplot(non_thurs, aes(TimeZone))+
+  geom_histogram(stat="count")+
+  coord_flip()
+#Clean up time zone
 #Create a binary thursday column 
+```
+
 ```{r}
 #might want to look at this in terms of game excitement
 fulldata_with_thurs <- data %>% 

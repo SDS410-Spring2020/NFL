@@ -17,6 +17,7 @@ pbp<-read.csv("data/pbp_Smith.csv")
 ```
 
 
+#Creation of 2 DFs (Thursday and Non Thursday)
 
 ```{r}
 
@@ -53,4 +54,10 @@ ggplot(non_thurs, aes(TimeZone))+
   geom_histogram(stat="count")+
   coord_flip()
 #Clean up time zone
+#Create a binary thursday column 
+```
+
+```{r}
+fulldata_with_thurs <- data %>% 
+  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
 ```

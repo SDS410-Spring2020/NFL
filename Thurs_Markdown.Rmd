@@ -27,6 +27,7 @@ non_thurs<-data%>%
 
 #Create a binary thursday column 
 ```{r}
+#might want to look at this in terms of game excitement
 fulldata_with_thurs <- data %>% 
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
 ```

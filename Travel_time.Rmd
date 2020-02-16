@@ -1,0 +1,37 @@
+---
+title: "Creating_city_columns"
+author: "Aoi Ogawa"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+# importing data
+games<-read.csv("data/games_Smith.csv")
+pbp<-read.csv("data/pbp_Smith.csv")
+```
+
+
+```{r, include=FALSE}
+# importing libraries
+library(datasets)
+library(maps)
+library(tidyr)
+library(tidyverse)
+```
+
+```{r}
+us.cities
+```
+
+```{r}
+city_names <-us.cities %>% 
+  separate(name, into = c('city', 'state'), sep = -2)
+city_names$state <- NULL
+```
+
+

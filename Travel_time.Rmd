@@ -1,0 +1,130 @@
+---
+title: "Creating_city_columns"
+author: "Aoi Ogawa"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+# importing data
+games<-read.csv("data/games_Smith.csv")
+pbp<-read.csv("data/pbp_Smith.csv")
+```
+
+
+```{r, include=FALSE}
+# importing libraries
+library(datasets)
+library(maps)
+library(tidyr)
+library(tidyverse)
+```
+
+```{r,include=FALSE}
+us.cities
+```
+
+```{r}
+city_names <-us.cities %>% 
+  separate(name, into = c('city', 'state'), sep = -2)
+city_names$state <- NULL
+
+city <-city_names$city
+```
+
+
+
+```{r}
+team_city_preliminary <- games %>%
+  group_by(Home_Team, Visit_Team) %>%
+  summarise(num = n())
+```
+
+```{r}
+# Home team code
+team_city <- games %>%
+  mutate(team_code = ifelse(Home_Team == "Arizona Cardinals", 1,
+         ifelse(Home_Team == "Atlanta Falcons", 2,
+                ifelse(Home_Team == "Baltimore Ravens", 3,
+                       ifelse(Home_Team == "Buffalo Bills", 4, 
+                              ifelse(Home_Team == "Carolina Panthers", 5, 
+                                     ifelse(Home_Team == "Chicago Bears", 6,
+                                            ifelse(Home_Team == "	Cincinnati Bengals", 7, 
+                                                   ifelse(Home_Team == "Cleveland Browns",8,
+                                                          ifelse(Home_Team == "Dallas Cowboys", 9,
+                                                                 ifelse(Home_Team == "Denver Broncos" ,10,
+                                                                        ifelse(Home_Team == "Detroit Lions", 11, 
+                                                                               ifelse(Home_Team == "Green Bay Packers", 12,
+                                                                                      ifelse(Home_Team == "Houston Texans",13,
+                                                                                             ifelse(Home_Team == "Indianapolis Colts", 14,
+                                                                                                    ifelse(Home_Team == "Jacksonville Jaguars", 15,
+                                                                                                           ifelse(Home_Team == "Kansas City Chiefs", 16,
+                                                                                                                  ifelse(Home_Team == "Los Angeles Chargers", 17,
+                                                                                                                         ifelse(Home_Team == "Los Angeles Rams", 18,
+                                                                                                                                ifelse(Home_Team == "Miami Dolphins", 19,
+                                                                                                                                       ifelse(Home_Team == "	Minnesota Vikings", 20,
+                                                                                                                                              ifelse(Home_Team == "New England Patriots", 21,
+                                                                                                                                                     ifelse(Home_Team == "New Orleans Saints", 22,
+                                                                                                                                                            ifelse(Home_Team == "New York Giants", 23,
+                                                                                                                                                                   ifelse(Home_Team == "New York Jets", 24,
+                                                                                                                                                                          ifelse(Home_Team == "Oakland Raiders", 25,
+                                                                                                                                                                                 ifelse(Home_Team == "Philadelphia Eagles", 26,
+                                                                                                                                                                                        ifelse(Home_Team == "Pittsburgh Steelers", 27,
+                                                                                                                                                                                               ifelse(Home_Team == "San Diego Chargers", 28,
+                                                                                                                                                                                                      ifelse(Home_Team == "San Francisco 49ers", 29,
+                                                                                                                                                                                                             ifelse(Home_Team == "Seattle Seahawks", 30,
+                                                                                                                                                                                                                    ifelse(Home_Team == "St. Louis Rams", 31,
+                                                                                                                                                                                                                           ifelse(Home_Team == "Tampa Bay Buccaneers", 32,
+                                                                                                                                                                                                                                  ifelse(Home_Team == "Tennessee Titans", 33,
+                                                                                                                                                                                                                                         ifelse(Home_Team == "Washington Redskins", 34, 0
+                                                                                                                                                                                                                                        )))))))))))))))))))))))))))))))))))
+```
+
+
+
+```{r}
+# Visitor team code
+team_city <- team_city %>%
+  mutate(visit_team_code = ifelse(Visit_Team == "Arizona Cardinals", 1,
+         ifelse(Visit_Team == "Atlanta Falcons", 2,
+                ifelse(Visit_Team == "Baltimore Ravens", 3,
+                       ifelse(Visit_Team == "Buffalo Bills", 4, 
+                              ifelse(Visit_Team == "Carolina Panthers", 5, 
+                                     ifelse(Visit_Team == "Chicago Bears", 6,
+                                            ifelse(Visit_Team == "	Cincinnati Bengals", 7, 
+                                                   ifelse(Visit_Team == "Cleveland Browns",8,
+                                                          ifelse(Visit_Team == "Dallas Cowboys", 9,
+                                                                 ifelse(Visit_Team == "Denver Broncos" ,10,
+                                                                        ifelse(Visit_Team == "Detroit Lions", 11, 
+                                                                               ifelse(Visit_Team == "Green Bay Packers", 12,
+                                                                                      ifelse(Visit_Team == "Houston Texans",13,
+                                                                                             ifelse(Visit_Team == "Indianapolis Colts", 14,
+                                                                                                    ifelse(Visit_Team == "Jacksonville Jaguars", 15,
+                                                                                                           ifelse(Visit_Team == "Kansas City Chiefs", 16,
+                                                                                                                  ifelse(Visit_Team == "Los Angeles Chargers", 17,
+                                                                                                                         ifelse(Visit_Team == "Los Angeles Rams", 18,
+                                                                                                                                ifelse(Visit_Team == "Miami Dolphins", 19,
+                                                                                                                                       ifelse(Visit_Team == "	Minnesota Vikings", 20,
+                                                                                                                                              ifelse(Visit_Team == "New England Patriots", 21,
+                                                                                                                                                     ifelse(Visit_Team == "New Orleans Saints", 22,
+                                                                                                                                                            ifelse(Visit_Team == "New York Giants", 23,
+                                                                                                                                                                   ifelse(Visit_Team == "New York Jets", 24,
+                                                                                                                                                                          ifelse(Visit_Team == "Oakland Raiders", 25,
+                                                                                                                                                                                 ifelse(Visit_Team == "Philadelphia Eagles", 26,
+                                                                                                                                                                                        ifelse(Visit_Team == "Pittsburgh Steelers", 27,
+                                                                                                                                                                                               ifelse(Visit_Team == "San Diego Chargers", 28,
+                                                                                                                                                                                                      ifelse(Visit_Team == "San Francisco 49ers", 29,
+                                                                                                                                                                                                             ifelse(Visit_Team == "Seattle Seahawks", 30,
+                                                                                                                                                                                                                    ifelse(Visit_Team == "St. Louis Rams", 31,
+                                                                                                                                                                                                                           ifelse(Visit_Team == "Tampa Bay Buccaneers", 32,
+                                                                                                                                                                                                                                  ifelse(Visit_Team == "Tennessee Titans", 33,
+                                                                                                                                                                                                                                         ifelse(Visit_Team == "Washington Redskins", 34, 0
+                                                                                                                                                                                                                                        )))))))))))))))))))))))))))))))))))
+```
+
+
+

@@ -23,7 +23,7 @@ pbp<-read.csv("data/pbp_Smith.csv")
 
 #join DF
 data<-games %>% 
-  left_join(pbp, by="GameKey")
+  inner_join(pbp, by="GameKey")
 
 #Creation of DF
 thurs<-data %>% 

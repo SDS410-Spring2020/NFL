@@ -47,6 +47,7 @@ team_city_preliminary <- games %>%
   summarise(num = n())
 ```
 
+# separating the city and team name
 
 ```{r}
 CITY <- games %>% 

@@ -45,6 +45,10 @@ city <-city_names$city
 team_city_preliminary <- games %>%
   group_by(Home_Team, Visit_Team) %>%
   summarise(num = n())
+
+team_home<- games %>%
+  group_by(Home_Team) %>%
+  summarise(num = n())
 ```
 
 # separating the city and team name

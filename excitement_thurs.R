@@ -1,7 +1,6 @@
 #Use the games ds (thursday = binary)
 head(games)
 
-
 #creating binary thursday in games df
 thurs_games <- games %>% 
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
@@ -19,4 +18,4 @@ excitement_joined <- excitement %>%
 #look at excitement score on Thurs vs Not Thurs
 boxplot(excitement_joined[["excite_score"]] ~ excitement_joined[["is_thurs"]], data = excitement_joined,
         xlab="Thursday/Not Thursday", ylab="excitement score",
-        main = "Score Distributions on Thursdays and Non-Thursdays")
+        main = "Score Distributions on Thurs vs Non-Thurs")

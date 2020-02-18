@@ -7,6 +7,13 @@ library(tidyverse)
 games<- read.csv("data/games_Smith.csv")
 pbp<- read.csv("data/pbp_Smith.csv")
 
+data<-games %>% 
+  inner_join(pbp, by="GameKey")
+
+#might want to look at this in terms of game excitement
+fulldata_with_thurs <- data %>% 
+  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
+
 #create an excitement variable
 #using thurs_games data
 excitement <- fulldata_with_thurs %>% 

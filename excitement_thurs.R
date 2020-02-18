@@ -35,14 +35,13 @@ boxplot(excitement_joined[["excite_score"]] ~ excitement_joined[["is_thurs"]], d
         xlab="Thursday/Not Thursday", ylab="excitement score",
         main = "Score Distributions on Thursdays and Non-Thursdays")
 
-#simple statistical analyses: difference in means 
+#simple statistical analyses: sign test 
 head(excitement_joined)
 excitement_means <- excitement_joined %>% 
   select(GameKey, excite_score, is_thurs) %>% 
   group_by(is_thurs) %>%
   summarise(mean(excite_score))
 excitement_means
-
 
 
 

@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # importing data
 games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
+NFL_team_city <- read_csv("NFL_team_city.csv")
 ```
 
 
@@ -32,11 +33,6 @@ us.cities
 city_names <-us.cities %>% 
   separate(name, into = c('city', 'state'), sep = -2)
 city_names$state <- NULL
-
-
-
-
-city <-city_names$city
 ```
 
 
@@ -49,14 +45,38 @@ team_city_preliminary <- games %>%
 team_home<- games %>%
   group_by(Home_Team) %>%
   summarise(num = n())
+
+stadium_data <- games %>%
+  group_by(Home_Team,Stadium,Season) %>%
+  summarise(num =n())
 ```
 
+
+```{r}
+Travel_data <- games %>%
+  inner_join(NFL_team_city, by = "Visit_Team")
+
+colnames(Travel_data)[which(names(Travel_data) == "visitor_home_city")] <- "city"
+
+# selected_city <- city_names %>%
+#   select(city == c("Baltimore","Cincinnati","Cleveland","Pittsburgh","Houston","Indianapolis","Jacksonville","Nashville","Denver","Kansas City","Paradise","Inglewood","Philadelphia","Chicago","Detroit", "Green Bay","Minneapolis", ))
+
+# Travel_distance_data <-Travel_data %>%
+#   inner_join(city_names,by = "city")
+```
+
+
+
+
+
+
+--------------------------------------------------
 # separating the city and team name
 
 ```{r}
-CITY <- games %>% 
-  separate(Visit_Team, into = c('city', 'state', 'extra'), sep = " ") %>% 
-  View()
+# CITY <- games %>% 
+#   separate(Visit_Team, into = c('city', 'state', 'extra'), sep = " ") %>% 
+#   View()
 ```
 
 

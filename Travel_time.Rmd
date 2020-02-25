@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # importing data
 games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
-NFL_team_city <- read_csv("NFL_team_city.csv")
+# NFL_team_city <- read.csv("NFL_team_city.csv")
 ```
 
 

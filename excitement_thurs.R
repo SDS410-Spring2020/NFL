@@ -59,3 +59,4 @@ wilcox.test(non_thurs$excite_score, thurs$excite_score, alternative = "g")
 #result: reject the null hypothesis, non_thurs has a higher mean exciement score
 
 
+

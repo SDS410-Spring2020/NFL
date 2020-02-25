@@ -11,6 +11,7 @@ library (tidyverse)
 ```
 
 ```{r}
+
 games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
 
@@ -18,6 +19,7 @@ pbp<-read.csv("data/pbp_Smith.csv")
 
 
 #Creation of 2 DFs (Thursday and Non Thursday)
+
 
 ```{r}
 
@@ -55,9 +57,53 @@ ggplot(non_thurs, aes(TimeZone))+
   coord_flip()
 #Clean up time zone
 #Create a binary thursday column 
+
+
+#Count
+count(data, Season)
+count (data, Week)
 ```
 
 ```{r}
-fulldata_with_thurs <- data %>% 
+data <- data %>% 
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
+
+data_2019<-data %>% 
+  filter(Season==2019)
+
 ```
+
+```{r}
+
+#Clean strings
+
+pbp$PlayDescription<-str_to_lower(pbp$PlayDescription)
+
+#Playing around with counts
+data_2019<-data_2019 %>% 
+  mutate(PlayDescription=as.character(PlayDescription))
+kicks<-str_count(data_2019$PlayDescription,"kick")
+sum(kicks)
+mean(kicks)
+
+tackle<-str_count(pbp$PlayDescription,"tackle")
+sum(tackle)
+mean(tackle)
+
+pass<-str_which(pbp$PlayDescription,"pass")
+sum(pass)
+mean(pass)
+
+#String counts
+
+
+words <- data.frame(Var2 = c("pass", "kick", "tackle", "penalty", "punts", "fumbles", "fumble", "false start", "sacked", "pass short"),bad_plays=c("pass incomplete", "interception"),
+                     stringsAsFactors = FALSE)
+
+
+sapply(words$Var2,function(x){length(str_which(pbp$PlayDescription, pattern = x))})
+
+
+
+```
+

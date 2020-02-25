@@ -1,0 +1,82 @@
+---
+title: "Creating_city_columns"
+author: "Aoi Ogawa"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+# importing data
+games<-read.csv("data/games_Smith.csv")
+pbp<-read.csv("data/pbp_Smith.csv")
+NFL_team_city <- read_csv("NFL_team_city.csv")
+```
+
+
+```{r, include=FALSE}
+# importing libraries
+library(datasets)
+library(maps)
+library(tidyr)
+library(tidyverse)
+```
+
+```{r,include=FALSE}
+us.cities
+```
+
+```{r}
+city_names <-us.cities %>% 
+  separate(name, into = c('city', 'state'), sep = -2)
+city_names$state <- NULL
+```
+
+
+
+```{r}
+team_city_preliminary <- games %>%
+  group_by(Home_Team, Visit_Team) %>%
+  summarise(num = n())
+
+team_home<- games %>%
+  group_by(Home_Team) %>%
+  summarise(num = n())
+
+stadium_data <- games %>%
+  group_by(Home_Team,Stadium,Season) %>%
+  summarise(num =n())
+```
+
+
+```{r}
+Travel_data <- games %>%
+  inner_join(NFL_team_city, by = "Visit_Team")
+
+colnames(Travel_data)[which(names(Travel_data) == "visitor_home_city")] <- "city"
+
+# selected_city <- city_names %>%
+#   select(city == c("Baltimore","Cincinnati","Cleveland","Pittsburgh","Houston","Indianapolis","Jacksonville","Nashville","Denver","Kansas City","Paradise","Inglewood","Philadelphia","Chicago","Detroit", "Green Bay","Minneapolis", ))
+
+# Travel_distance_data <-Travel_data %>%
+#   inner_join(city_names,by = "city")
+```
+
+
+
+
+
+
+--------------------------------------------------
+# separating the city and team name
+
+```{r}
+# CITY <- games %>% 
+#   separate(Visit_Team, into = c('city', 'state', 'extra'), sep = " ") %>% 
+#   View()
+```
+
+

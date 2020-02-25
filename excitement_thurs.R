@@ -41,7 +41,21 @@ excitement_means <- excitement_joined %>%
   select(GameKey, excite_score, is_thurs) %>% 
   group_by(is_thurs) %>%
   summarise(mean(excite_score))
-excitement_means
+excitement_means #note: mean excitement is higher on non_thurs
 
+#set up signed rank test
+thurs <- excitement_joined %>% 
+  select(excite_score, is_thurs) %>% 
+  filter(is_thurs == "1")
+
+non_thurs <- excitement_joined %>% 
+  select(excite_score, is_thurs) %>% 
+  filter(is_thurs == "0")
+
+#setting up hypotheses
+#Null: theta = 0 (there is no difference in excitement score
+#Alternative: theta > 0 non thursdays are more exciting 
+wilcox.test(non_thurs$excite_score, thurs$excite_score, alternative = "g")
+#result: reject the null hypothesis, non_thurs has a higher mean exciement score
 
 

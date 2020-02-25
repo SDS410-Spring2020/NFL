@@ -9,8 +9,15 @@ output: html_document
 library(readr)
 library(dplyr)
 library(ggplot2)
+install.packages("geosphere")
+library(geosphere)
 ```
 
+```{r}
+library(geosphere)
+h<-CalcDistance(40.7697,-73.9735,34.0522,-118.2428)
+h
+```
 
 ```{r,include=FALSE}
 games_Smith <- read_csv("data/games_Smith.csv")

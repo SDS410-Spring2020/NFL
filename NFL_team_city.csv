@@ -1,0 +1,38 @@
+Visit_Team,NFC_or_AFC,visitor_home_city,Visitor_stadium,Additional_info,was not in city name dataset,longitude,latitude
+Buffalo Bills,AFC,Orchard Park,Orchard Park,,No,42.46,-78.44
+Miami Dolphins,AFC,Miami Gardens,Miami Gardens,,No,25.56,-80.16
+New England Patriots,AFC,Foxborough,Foxborough,,No,42.03,-71.14
+New York Jets,AFC,East Rutherford,East Rutherford,,No,40.81,-74.08
+Baltimore Ravens,AFC,Baltimore,Baltimore,,,,
+Cincinnati Bengals,AFC,Cincinnati,Cincinnati,,,,
+Cleveland Browns,AFC,Cleveland,Cleveland,,,,
+Pittsburgh Steelers,AFC,Pittsburgh,Pittsburgh,,,,
+Houston Texans,AFC,Houston,Houston,,,,
+Indianapolis Colts,AFC,Indianapolis,Indianapolis,,,,
+Jacksonville Jaguars,AFC,Jacksonville,Jacksonville,,,,
+Tennessee Titans,AFC,Nashville,Nashville,,,,
+Denver Broncos,AFC,Denver,Denver,,,,
+Kansas City Chiefs,AFC,Kansas City,Kansas City,,,,
+Las Vegas Raiders,AFC,Oakland,Paradise,2020 moved to Las Vagas from Oakland,,,
+Los Angeles Chargers,AFC,Carson,Inglewood,2017 move to Los Angeles from San Diego,,,
+Dallas Cowboys,NFC,Arlington,Arlington,,,,
+New York Giants,NFC,East Rutherford,East Rutherford,,No,40.81,-74.08
+Philadelphia Eagles,NFC,Philadelphia,Philadelphia,,,,
+Landover,NFC,Landover,Landover,,No,38.56,-76.54
+Chicago Bears,NFC,Chicago,Chicago,,,,
+Detroit Lions,NFC,Detroit,Detroit,,,,
+Green Bay Packers,NFC,Green Bay,Green Bay,,,,
+Minnesota Vikings,NFC,Minneapolis,Minneapolis,,,,
+Atlanta Falcons,NFC,Atlanta,Atlanta,,,,
+Carolina Panthers,NFC,Charlotte,Charlotte,,,,
+New Orleans Saints,NFC,New Orleans,New Orleans,,,,
+Tampa Bay Buccaneers,NFC,Tampa,Tampa,,,,
+Arizona Cardinals,NFC,Glendale,New Orleans,,,,
+Los Angeles Rams,NFC,Los Angeles,Inglewood,2016 moved to Los Angeles from St. Louis,,,
+San Franciscoo 49ers,NFC,Santa Clara,Santa Clara,,,,
+Seattle Seahawks,NFC,Seattle,Seattle,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,Stadium in Las Vegas ,,,,,-115.185509,36.080761

@@ -1,6 +1,5 @@
 #Use the fulldata_with_thurs ds (thursday = binary)
 #load tidyverse
-head(fulldata_with_thurs)
 library(tidyverse)
 
 #reading in the two nfl data frames 
@@ -55,7 +54,9 @@ non_thurs <- excitement_joined %>%
 #setting up hypotheses
 #Null: theta = 0 (there is no difference in excitement score
 #Alternative: theta > 0 non thursdays are more exciting 
-wilcox.test(non_thurs$excite_score, thurs$excite_score, alternative = "g")
+t.test(excite_score ~ is_thurs, data = excitement_joined)
+wilcox.test(excite_score ~ is_thurs, data = excitement_joined, alternative = "g")
 #result: reject the null hypothesis, non_thurs has a higher mean exciement score
+
 
 

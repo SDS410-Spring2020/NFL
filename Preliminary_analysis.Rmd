@@ -9,8 +9,20 @@ output: html_document
 library(readr)
 library(dplyr)
 library(ggplot2)
+install.packages("geosphere")
+library(geosphere)
 ```
 
+```{r}
+library(geosphere)
+#p1 and p2 need to be in the order, long then lat
+p1 <- c(-73.9735, 40.7697)
+p2 <- c(-118.2428, 34.0522)
+r = 6378137
+
+#calculate distance between two points 
+distCosine(p1, p2)
+```
 
 ```{r,include=FALSE}
 games_Smith <- read_csv("data/games_Smith.csv")

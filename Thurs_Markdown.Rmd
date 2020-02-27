@@ -14,6 +14,7 @@ library (tidyverse)
 
 games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
+
 ```
 
 
@@ -95,20 +96,27 @@ sum(pass)
 mean(pass)
 
 #String counts
-
-
 words <- data.frame(Var2 = c("pass", "kick", "tackle", "penalty", "punts", "fumbles", "fumble", "false start", "sacked", "pass short"),bad_plays=c("pass incomplete", "interception"),
                      stringsAsFactors = FALSE)
 
-
 sapply(words$Var2,function(x){length(str_which(pbp$PlayDescription, pattern = x))})
 #Create Play-by-play point
-
-pbp<-pbp %>% 
-  select(PlayDescription) %>% 
+plays<-data %>% 
+  #select(PlayDescription) %>% 
   mutate(pass=ifelse(str_detect(PlayDescription, "pass"), 1,0), 
          pass_incm=ifelse(str_detect(PlayDescription,"pass incomplete"),1,0),
+         pass_incm_deep=ifelse(str_detect(PlayDescription,"pass incomplete deep"),1,0),
+         pass_incm_deep_r=ifelse(str_detect(PlayDescription,"pass incomplete deep right"),1,0),
+         pass_incm_deep_l=ifelse(str_detect(PlayDescription,"pass incomplete deep left"),1,0),
+         pass_incm_short=ifelse(str_detect(PlayDescription,"pass incomplete short"),1,0),
+         pass_incm_short_l=ifelse(str_detect(PlayDescription,"pass incomplete short left"),1,0),
+         pass_incm_short_r=ifelse(str_detect(PlayDescription,"pass incomplete short right"),1,0),
          pass_short=ifelse(str_detect(PlayDescription,"pass short"),1,0),
+         pass_short_l=ifelse(str_detect(PlayDescription,"pass short left"),1,0),
+         pass_short_r=ifelse(str_detect(PlayDescription,"pass short_right"),1,0), 
+         pass_deep=ifelse(str_detect(PlayDescription,"pass deep"),1,0), 
+         pass_deep_r=ifelse(str_detect(PlayDescription,"pass deep right"),1,0),
+         pass_deep_l=ifelse(str_detect(PlayDescription,"pass deep left"),1,0),
          penalty=ifelse(str_detect(PlayDescription,"penalty"),1,0),
          tackle=ifelse(str_detect(PlayDescription,"tackle"),1,0),
          punts=ifelse(str_detect(PlayDescription,"punts"),1,0),
@@ -117,8 +125,8 @@ pbp<-pbp %>%
          sacked=ifelse(str_detect(PlayDescription,"sacked"),1,0),
          interception=ifelse(str_detect(PlayDescription,"interception"),1,0), 
          kick=ifelse(str_detect(PlayDescription,"kick"),1,0), 
-         recover=ifelse(str_detect(PlayDescription,"recover"),1,0))
-         
+         recover=ifelse(str_detect(PlayDescription,"recover"),1,0), 
+         no_gain=ifelse(str_detect(PlayDescription,"no gain"),1,0))
 
 #try abnd pip by gameid and filtered for thurs 
 #then filtered by non-thurs 

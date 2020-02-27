@@ -103,8 +103,6 @@ words <- data.frame(Var2 = c("pass", "kick", "tackle", "penalty", "punts", "fumb
 
 
 sapply(words$Var2,function(x){length(str_which(pbp$PlayDescription, pattern = x))})
-
-
 #Create Play-by-play point
 
 pbp<-pbp %>% 

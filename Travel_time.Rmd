@@ -51,6 +51,11 @@ stadium_data <- games %>%
   summarise(num =n())
 ```
 
+```{r}
+# exporting stadium_data
+write_csv(stadium_data, path = "stadium_data.csv")
+```
+
 
 ```{r}
 Travel_data <- games %>%

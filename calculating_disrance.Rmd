@@ -16,6 +16,9 @@ library(maps)
 library(tidyr)
 library(tidyverse)
 library(readr)
+install.packages("geosphere")
+library(geosphere)
+library(dplyr)
 ```
 
 
@@ -24,6 +27,19 @@ library(readr)
 games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
+```
+
+```{r}
+games_w_coordinates <- games %>%
+  inner_join(stadium_data_coordinates)
+
+remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
+
+domestic_games <- games_w_coordinates %>%
+  filter(!grepl(remove.list, Stadium))
+
+international_games <- games_w_coordinates %>%
+  filter(grepl(remove.list, Stadium))
 ```
 
 

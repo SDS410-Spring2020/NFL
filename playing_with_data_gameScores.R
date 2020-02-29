@@ -99,4 +99,12 @@ winner <- final_scores %>%
         home_final < visitor_final ~ as.character(visitor_club_code),
         home_final == visitor_final ~ "tie"), 
       is_tie = ifelse(winning_team == "tie", 1, 0))
-  
+
+# nfl game attendance 
+# rivarlries 
+# winning percentages 
+# offense production - expected points 
+# delta wp for each play 
+# rankings of the games 
+
+

@@ -35,9 +35,13 @@ visit_team_data <- read_csv("visit_team_data.csv")
 games_w_coordinates <- games %>%
   inner_join(stadium_data_coordinates)
 
+games_w_coordinates <- games_w_coordinates %>%
+  inner_join(visit_team_data)
+
 games_w_coordinates$num <-NULL
-colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'longitude'] <- 'Home_long'
-colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'latitude'] <- 'Home_lat'
+games_w_coordinates$additional_info_location <- NULL
+colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'longitude'] <- 'Home_lat'
+colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'latitude'] <- 'Home_long'
 
 remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
 
@@ -46,8 +50,18 @@ domestic_games <- games_w_coordinates %>%
 
 international_games <- games_w_coordinates %>%
   filter(grepl(remove.list, Stadium))
+```
+
+```{r}
+# calculate distance
+
+str(domestic_games)
+
+calc_domestic <- domestic_games %>% 
+  rowwise() %>%
+  mutate(distance = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat)))
+
 
 
 ```
-
 

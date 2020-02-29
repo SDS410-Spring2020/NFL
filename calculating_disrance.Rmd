@@ -55,13 +55,33 @@ international_games <- games_w_coordinates %>%
 ```{r}
 # calculate distance
 
-str(domestic_games)
-
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
   mutate(distance = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat)))
 
+```
 
+```{r}
+without_season_dis <- calc_domestic %>%
+  group_by(Home_Team,Visit_Team,distance) %>%
+  summarise(num=n())
+
+season_dis <- calc_domestic %>%
+  group_by(Home_Team,Visit_Team,distance,Season) %>%
+  summarise(num=n())
+
+season_num_games_home <- calc_domestic %>%
+  group_by(Home_Team,Season) %>%
+  summarise(host_num=n())
+
+season_num_games_visit <- calc_domestic %>%
+  group_by(Visit_Team,Season) %>%
+  summarise(visit_num=n())
+
+# total_season_game <- season_num_games_home %>%
+#   inner_join(season_num_games_visit) %>%
+#   mutate(sum = host_num + visit_num)
 
 ```
+
 

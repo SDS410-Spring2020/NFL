@@ -159,7 +159,7 @@ mapping_2007 <- mapping_Arizona_Cardinals_2007 %>%
   addMarkers(~Home_long, ~Home_lat, icon=home_icons) %>%
   addMarkers(
     lng = mapping_Arizona_Cardinals_2007$Visit_long, lat = mapping_Arizona_Cardinals_2007$Visit_lat,
-    label = "Arizona Cardinals",
+    label = mapping_Arizona_Cardinals_2007$Visit_Team,
     labelOptions = labelOptions(noHide = T))
 
 # %>%
@@ -167,7 +167,11 @@ mapping_2007 <- mapping_Arizona_Cardinals_2007 %>%
 
 for (i in 1:nrow(mapping_Arizona_Cardinals_2007)) 
 mapping_2007<-mapping_2007 %>%
-  addPolylines(lat=c(mapping_Arizona_Cardinals_2007[i,]$Visit_lat,mapping_Arizona_Cardinals_2007[i,]$Home_lat),lng=c(mapping_Arizona_Cardinals_2007[i,]$Visit_long,mapping_Arizona_Cardinals_2007[i,]$Home_long)) 
+  addPolylines(lat=c(mapping_Arizona_Cardinals_2007[i,]$Visit_lat,mapping_Arizona_Cardinals_2007[i,]$Home_lat),lng=c(mapping_Arizona_Cardinals_2007[i,]$Visit_long,mapping_Arizona_Cardinals_2007[i,]$Home_long)) %>%
+  addMarkers(
+    lng = mapping_Arizona_Cardinals_2007[i,]$Home_long, lat = mapping_Arizona_Cardinals_2007[i,]$Home_lat,
+    label = mapping_Arizona_Cardinals_2007[i,]$Home_Team,
+    labelOptions = labelOptions(noHide = T))
 
 mapping_2007
 ```

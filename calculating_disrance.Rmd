@@ -154,16 +154,20 @@ home_icons <- awesomeIcons(
 mapping_2007 <- mapping_Arizona_Cardinals_2007 %>% 
   leaflet() %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
-  setView(-93.65, 42.0285, zoom = 3) %>%
+  setView(-93.65, 42.0285, zoom = 4) %>%
   addMarkers(~Visit_long, ~Visit_lat, icon=visitor_icons) %>%
-  addMarkers(~Home_long, ~Home_lat, icon=home_icons)
+  addMarkers(~Home_long, ~Home_lat, icon=home_icons) %>%
+  addMarkers(
+    lng = mapping_Arizona_Cardinals_2007$Visit_long, lat = mapping_Arizona_Cardinals_2007$Visit_lat,
+    label = "Arizona Cardinals",
+    labelOptions = labelOptions(noHide = T))
 
 # %>%
 #   addPolylines(data = Lines_from_arizona_2007, lng = ~long, lat = ~lat, group = ~group)
 
 for (i in 1:nrow(mapping_Arizona_Cardinals_2007)) 
-mapping_2007<-mapping_2007%>%
-  addPolylines(lat=c(mapping_Arizona_Cardinals_2007[i,]$Visit_lat,mapping_Arizona_Cardinals_2007[i,]$Home_lat),lng=c(mapping_Arizona_Cardinals_2007[i,]$Visit_long,mapping_Arizona_Cardinals_2007[i,]$Home_long))
+mapping_2007<-mapping_2007 %>%
+  addPolylines(lat=c(mapping_Arizona_Cardinals_2007[i,]$Visit_lat,mapping_Arizona_Cardinals_2007[i,]$Home_lat),lng=c(mapping_Arizona_Cardinals_2007[i,]$Visit_long,mapping_Arizona_Cardinals_2007[i,]$Home_long)) 
 
 mapping_2007
 ```

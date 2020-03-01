@@ -43,13 +43,19 @@ games_w_coordinates$additional_info_location <- NULL
 colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'longitude'] <- 'Home_lat'
 colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'latitude'] <- 'Home_long'
 
+games_w_coordinates <- games_w_coordinates[!duplicated(games_w_coordinates$GameKey), ]
+
 remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
 
 domestic_games <- games_w_coordinates %>%
   filter(!grepl(remove.list, Stadium))
 
+domestic_games <- domestic_games[!duplicated(domestic_games$GameKey), ]
+
 international_games <- games_w_coordinates %>%
   filter(grepl(remove.list, Stadium))
+
+international_games <- international_games[!duplicated(international_games$GameKey), ]
 ```
 
 ```{r}
@@ -58,6 +64,8 @@ international_games <- games_w_coordinates %>%
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
   mutate(distance = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat)))
+
+calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
 
 ```
 

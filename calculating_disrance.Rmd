@@ -19,7 +19,9 @@ library(readr)
 # install.packages("geosphere")
 library(geosphere)
 library(dplyr)
-library(data.table)
+library(sp)
+library(leaflet)
+library(magrittr)
 ```
 
 
@@ -86,10 +88,77 @@ season_num_games_visit <- calc_domestic %>%
   group_by(Visit_Team,Season) %>%
   summarise(visit_num=n())
 
-# total_season_game <- season_num_games_home %>%
-#   inner_join(season_num_games_visit) %>%
-#   mutate(sum = host_num + visit_num)
-
 ```
 
+```{r}
+# Creating datasets based on season
+
+season_2007 <- calc_domestic %>%
+  filter(Season=="2007")
+
+season_2008 <- calc_domestic %>%
+  filter(Season=="2008")
+
+season_2009 <- calc_domestic %>%
+  filter(Season=="2009")
+
+season_2010 <- calc_domestic %>%
+  filter(Season=="2010")
+
+season_2011 <- calc_domestic %>%
+  filter(Season=="2011")
+
+season_2012 <- calc_domestic %>%
+  filter(Season=="2012")
+
+season_2013 <- calc_domestic %>%
+  filter(Season=="2013")
+
+season_2014 <- calc_domestic %>%
+  filter(Season=="2014")
+
+season_2015 <- calc_domestic %>%
+  filter(Season=="2015")
+
+season_2016 <- calc_domestic %>%
+  filter(Season=="2016")
+
+season_2017 <- calc_domestic %>%
+  filter(Season=="2017")
+
+season_2018 <- calc_domestic %>%
+  filter(Season=="2018")
+
+season_2019 <- calc_domestic %>%
+  filter(Season=="2019")
+```
+
+```{r}
+
+mapping_Arizona_Cardinals_2007 <-season_2007 %>%
+  filter(Visit_Team == "Arizona Cardinals")
+
+visitor_icons <- awesomeIcons(
+  icon = 'ios-close',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = "orange")
+
+home_icons <- awesomeIcons(
+  markerColor = "red")
+
+Lines_from_arizona_2007 <- data.frame(group = c("Home_Team", "Visit_Team"),
+                    lat = c(mapping_Arizona_Cardinals_2007$Visit_lat, mapping_Arizona_Cardinals_2007$Home_lat),
+                    long = c(mapping_Arizona_Cardinals_2007$Visit_long, mapping_Arizona_Cardinals_2007$Home_long))
+
+mapping_2007 <- mapping_Arizona_Cardinals_2007 %>% 
+  leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(-93.65, 42.0285, zoom = 3) %>%
+  addMarkers(~Visit_long, ~Visit_lat, icon=visitor_icons) %>%
+  addMarkers(~Home_long, ~Home_lat, icon=home_icons) %>%
+  addPolylines(data = Lines_from_arizona_2007, lng = ~long, lat = ~lat, group = ~group)
+
+mapping_2007
+```
 

@@ -65,19 +65,22 @@ international_games <- international_games[!duplicated(international_games$GameK
 
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
-  mutate(distance = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat)))
+  mutate(distance_km = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
+  mutate(distance_mile = distance_km*0.6214)
 
 calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
 
+# calc_domestic <- calc_domestic %>% 
+#   mutate(distance = ifelse())
 ```
 
 ```{r}
 without_season_dis <- calc_domestic %>%
-  group_by(Home_Team,Visit_Team,distance) %>%
+  group_by(Home_Team,Visit_Team,distance_mile) %>%
   summarise(num=n())
 
 season_dis <- calc_domestic %>%
-  group_by(Home_Team,Visit_Team,distance,Season) %>%
+  group_by(Home_Team,Visit_Team,distance_mile,Season) %>%
   summarise(num=n())
 
 season_num_games_home <- calc_domestic %>%
@@ -138,25 +141,13 @@ season_2019 <- calc_domestic %>%
 mapping_Arizona_Cardinals_2007 <-season_2007 %>%
   filter(Visit_Team == "Arizona Cardinals")
 
-visitor_icons <- awesomeIcons(
-  icon = 'ios-close',
-  iconColor = 'black',
-  library = 'ion',
-  markerColor = "orange")
-
-home_icons <- awesomeIcons(
-  markerColor = "red")
-
-# Lines_from_arizona_2007 <- data.frame(group = c("Home_Team", "Visit_Team"),
-#                     lat = c(mapping_Arizona_Cardinals_2007$Visit_lat, mapping_Arizona_Cardinals_2007$Home_lat),
-#                     long = c(mapping_Arizona_Cardinals_2007$Visit_long, mapping_Arizona_Cardinals_2007$Home_long))
 
 mapping_2007 <- mapping_Arizona_Cardinals_2007 %>% 
   leaflet() %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
-  setView(-93.65, 42.0285, zoom = 4) %>%
-  addMarkers(~Visit_long, ~Visit_lat, icon=visitor_icons) %>%
-  addMarkers(~Home_long, ~Home_lat, icon=home_icons) %>%
+  setView(-93.65, 42.0285, zoom = 4.3) %>%
+  addMarkers(~Visit_long, ~Visit_lat) %>%
+  addMarkers(~Home_long, ~Home_lat) %>%
   addMarkers(
     lng = mapping_Arizona_Cardinals_2007$Visit_long, lat = mapping_Arizona_Cardinals_2007$Visit_lat,
     label = mapping_Arizona_Cardinals_2007$Visit_Team,

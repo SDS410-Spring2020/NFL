@@ -66,12 +66,18 @@ international_games <- international_games[!duplicated(international_games$GameK
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
   mutate(distance_km = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
-  mutate(distance_mile = distance_km*0.6214)
+  mutate(distance_mile = distance_m*0.6214/1000)
 
 calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
 
-# calc_domestic <- calc_domestic %>% 
-#   mutate(distance = ifelse())
+calc_domestic <- calc_domestic %>%
+  mutate(distance = ifelse(distance_mile > 2000, "very far",
+                           ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close")))
+
+domestic_distance <- calc_domestic %>%
+  group_by(distance) %>%
+  summarise(num =n())
+
 ```
 
 ```{r}
@@ -142,7 +148,7 @@ mapping_Arizona_Cardinals_2007 <-season_2007 %>%
   filter(Visit_Team == "Arizona Cardinals")
 
 
-mapping_2007 <- mapping_Arizona_Cardinals_2007 %>% 
+Arizona_mapping_2007 <- mapping_Arizona_Cardinals_2007 %>% 
   leaflet() %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   setView(-93.65, 42.0285, zoom = 4.3) %>%
@@ -157,13 +163,75 @@ mapping_2007 <- mapping_Arizona_Cardinals_2007 %>%
 #   addPolylines(data = Lines_from_arizona_2007, lng = ~long, lat = ~lat, group = ~group)
 
 for (i in 1:nrow(mapping_Arizona_Cardinals_2007)) 
-mapping_2007<-mapping_2007 %>%
+Arizona_mapping_2007<-Arizona_mapping_2007 %>%
   addPolylines(lat=c(mapping_Arizona_Cardinals_2007[i,]$Visit_lat,mapping_Arizona_Cardinals_2007[i,]$Home_lat),lng=c(mapping_Arizona_Cardinals_2007[i,]$Visit_long,mapping_Arizona_Cardinals_2007[i,]$Home_long)) %>%
   addMarkers(
     lng = mapping_Arizona_Cardinals_2007[i,]$Home_long, lat = mapping_Arizona_Cardinals_2007[i,]$Home_lat,
     label = mapping_Arizona_Cardinals_2007[i,]$Home_Team,
     labelOptions = labelOptions(noHide = T))
 
-mapping_2007
+Arizona_mapping_2007
 ```
 
+
+```{r}
+
+mapping_Miami_Dolphins_2016 <-season_2016 %>%
+  filter(Visit_Team == "Miami Dolphins")
+
+
+miami_mapping_2016 <- mapping_Miami_Dolphins_2016 %>% 
+  leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(-93.65, 42.0285, zoom = 4.3) %>%
+  addMarkers(~Visit_long, ~Visit_lat) %>%
+  addMarkers(~Home_long, ~Home_lat) %>%
+  addMarkers(
+    lng = mapping_Miami_Dolphins_2016$Visit_long, lat = mapping_Miami_Dolphins_2016$Visit_lat,
+    label = mapping_Miami_Dolphins_2016$Visit_Team,
+    labelOptions = labelOptions(noHide = T))
+
+# %>%
+#   addPolylines(data = Lines_from_arizona_2007, lng = ~long, lat = ~lat, group = ~group)
+
+for (i in 1:nrow(mapping_Miami_Dolphins_2016)) 
+miami_mapping_2016<-miami_mapping_2016 %>%
+  addPolylines(lat=c(mapping_Miami_Dolphins_2016[i,]$Visit_lat,mapping_Miami_Dolphins_2016[i,]$Home_lat),lng=c(mapping_Miami_Dolphins_2016[i,]$Visit_long,mapping_Miami_Dolphins_2016[i,]$Home_long)) %>%
+  addMarkers(
+    lng = mapping_Miami_Dolphins_2016[i,]$Home_long, lat = mapping_Miami_Dolphins_2016[i,]$Home_lat,
+    label = mapping_Miami_Dolphins_2016[i,]$Home_Team,
+    labelOptions = labelOptions(noHide = T))
+
+miami_mapping_2016
+```
+
+```{r}
+
+mapping_New_York_Giants_2016 <-season_2016 %>%
+  filter(Visit_Team == "New York Giants")
+
+
+NY_Giants_mapping_2016 <- mapping_New_York_Giants_2016 %>% 
+  leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(-93.65, 42.0285, zoom = 4.3) %>%
+  addMarkers(~Visit_long, ~Visit_lat) %>%
+  addMarkers(~Home_long, ~Home_lat) %>%
+  addMarkers(
+    lng = mapping_New_York_Giants_2016$Visit_long, lat = mapping_New_York_Giants_2016$Visit_lat,
+    label = mapping_New_York_Giants_2016$Visit_Team,
+    labelOptions = labelOptions(noHide = T))
+
+# %>%
+#   addPolylines(data = Lines_from_arizona_2007, lng = ~long, lat = ~lat, group = ~group)
+
+for (i in 1:nrow(mapping_New_York_Giants_2016)) 
+NY_Giants_mapping_2016<-NY_Giants_mapping_2016 %>%
+  addPolylines(lat=c(mapping_New_York_Giants_2016[i,]$Visit_lat,mapping_New_York_Giants_2016[i,]$Home_lat),lng=c(mapping_Miami_Dolphins_2016[i,]$Visit_long,mapping_New_York_Giants_2016[i,]$Home_long)) %>%
+  addMarkers(
+    lng = mapping_New_York_Giants_2016[i,]$Home_long, lat = mapping_New_York_Giants_2016[i,]$Home_lat,
+    label = mapping_New_York_Giants_2016[i,]$Home_Team,
+    labelOptions = labelOptions(noHide = T))
+
+NY_Giants_mapping_2016
+```

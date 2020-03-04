@@ -65,7 +65,7 @@ international_games <- international_games[!duplicated(international_games$GameK
 
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
-  mutate(distance_km = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
+  mutate(distance_m = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
   mutate(distance_mile = distance_m*0.6214/1000)
 
 calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
@@ -235,3 +235,6 @@ NY_Giants_mapping_2016<-NY_Giants_mapping_2016 %>%
 
 NY_Giants_mapping_2016
 ```
+
+
+

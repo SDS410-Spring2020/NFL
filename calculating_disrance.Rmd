@@ -31,6 +31,7 @@ games<-read.csv("data/games_Smith.csv")
 pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
 visit_team_data <- read_csv("visit_team_data.csv")
+ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
 ```
 
 ```{r}

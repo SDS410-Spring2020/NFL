@@ -81,9 +81,15 @@ ep1_elo1_afc <- combined_elo1_afc %>%
   select(date, HomeClubCode, VisitorClubCode, Home_Team, PossessionTeam, ep1, is_thurs, Game_Day, PlayResult, elo1_pre, elo2_pre) %>% 
   filter(Game_Day == "Thursday" | Game_Day == "Sunday",
          ep1 > 0) %>%  
-  group_by(HomeClubCode, is_thurs, ep1, elo1_pre, elo2_pre) %>% 
+  group_by(HomeClubCode, VisitorClubCode, is_thurs, ep1, elo1_pre, elo2_pre) %>% 
   summarise(diff_ratings = first(abs(elo1_pre - elo2_pre)),
-            sum_ep_1 = sum(ep1)) %>%
-  group_by(HomeClubCode, is_thurs, diff_ratings, sum_ep_1)
+            sum_ep_1 = sum(ep1),
+            mean_ep1 = mean(sum_ep1)) %>%
+  group_by(HomeClubCode, VisitorClubCode, is_thurs, diff_ratings, sum_ep_1)
 
-
+elo_ratings_ep_home <- ggplot(data = ep1_elo1_afc, aes(x = Home_Team, y = mean_ep, fill = as.factor(is_thurs))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme(axis.text.x = element_text(angle=90)) +
+  ggtitle(label = "Comparing mean expected points", subtitle = "Offensive Production on Thursday  vs. Sunday") +
+  labs(fill = "Is_Thurs")
+team_allseason_plot

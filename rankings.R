@@ -43,7 +43,6 @@ ep_blt_vs_pit <- combined_all %>%
          Season == "2010") %>%
   select(GameKey, date, Season, GameClock, PossessionTeam, ep) 
 
-
 #visualization1: change of ep for BLT vs. PIT during their games in 2010   
 blt_vs_pit_2010 <- ggplot(data = ep_blt_vs_pit, aes(x = GameClock, y = ep, color = PossessionTeam)) +
   geom_line() + 
@@ -51,6 +50,28 @@ blt_vs_pit_2010 <- ggplot(data = ep_blt_vs_pit, aes(x = GameClock, y = ep, color
   ggtitle(label = "Change of ep for BLT vs. PIT Games in 2010.", subtitle = "Shows Offensive Team Production") 
 blt_vs_pit_2010
 
+# function that shows the change of ep for an given team during all their home games
+# for an given year
+#example: team_dep("BLT", "2010")
+team_dep <- function(team, year) { 
+  dep_data <- combined_all %>% 
+    filter(HomeClubCode == team,
+           Season == year) %>% 
+    select(GameKey, date, Season, GameClock, PossessionTeam, ep)
+  
+  dep_plot <- ggplot(data = dep_data, aes(x = GameClock, y = ep, color = PossessionTeam)) +
+    geom_line() + 
+    facet_wrap(facets = "date", nrow = 5) + 
+    ggtitle(label = "Change of Expected Points in Games", subtitle = "Shows Offensive Team Production") 
+  
+  return(dep_plot) 
+}
+
+function_name <- function(x) {
+  output <- x * 2
+  return(output)
+}
+function_name(5)
 #creating variables ep1 and ep2: expected points for home team and expected points for visitor team 
 ep_both_teams <- combined_all %>% 
   mutate(is_home = ifelse(as.character(HomeClubCode) == as.character(PossessionTeam), 1, 0),
@@ -103,7 +124,7 @@ afc <- full_with_elo %>%
                              "HOU", "IND", "JAC", "TEN",
                              "DEN", "KC", "OAK"),
          VisitorClubCode %in% c("BUF", "MIA", "NEP", "NYJ",
-                                "BAL", "CIN", "CLE", "PIT",
+                                "BLT", "CIN", "CLE", "PIT",
                                 "HOU", "IND", "JAC", "TEN",
                                 "DEN", "KC", "OAK"))
 
@@ -128,7 +149,7 @@ pit_home_2019 <- pit_2019 %>%
 #vis2: Pittsburg's elo rating before the game as visitor team
 pit_visitor_elo <- ggplot(data = pit_visitor_2019, aes(x = date, y = elo2_pre)) +
   geom_line() + 
-  geom_point(size = 2, alpha = 0.6) +
+  geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
   theme_bw()+
   geom_text(aes(label=HomeClubCode.x), hjust=0, vjust=0) +
   ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the visitor team.") 
@@ -137,7 +158,7 @@ pit_visitor_elo
 #vis3: Pittsburg's elo rating before the game as home team
 pit_home_elo <- ggplot(data = pit_home_2019, aes(x = date, y = elo1_pre)) +
   geom_line() + 
-  geom_point(size = 2, alpha = 0.6) +
+  geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
   theme_bw()+
   geom_text(aes(label=VisitorClubCode.x), hjust=0, vjust=0) +
   ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the home team.") 

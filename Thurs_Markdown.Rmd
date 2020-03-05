@@ -65,6 +65,7 @@ count (data, Week)
 ```{r}
 data <- data %>% 
   #might want to look at this in terms of game excitement
+  filter(Game_Day=="Sunday" | Game_Day=="Thursday") %>% 
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
 
 data_2019<-data %>% 
@@ -99,7 +100,9 @@ words <- data.frame(Var2 = c("pass", "kick", "tackle", "penalty", "punts", "fumb
 
 sapply(words$Var2,function(x){length(str_which(pbp$PlayDescription, pattern = x))})
 #Create Play-by-play point
-plays<-pbp %>% 
+
+
+plays<-data %>% 
   mutate(pass=ifelse(str_detect(PlayDescription, "pass"), 1,0), 
          pass_incm=ifelse(str_detect(PlayDescription,"pass incomplete"),1,0),
          short=ifelse(str_detect(PlayDescription,"short"),1,0),
@@ -118,10 +121,14 @@ plays<-pbp %>%
          kick=ifelse(str_detect(PlayDescription,"kick"),1,0), 
          recover=ifelse(str_detect(PlayDescription,"recover"),1,0), 
          no_gain=ifelse(str_detect(PlayDescription,"no gain"),1,0),
-         roughing= ifelse(str_detect(PlayDescription,"rough"), 1, 0)) 
+         roughing= ifelse(str_detect(PlayDescription,"rough"), 1, 0), 
+         run = ifelse(PlayResult>0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
+         bad_run = ifelse(PlayResult<0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
+         bad_tackle = ifelse(PlayResult<0 & (str_detect(PlayDescription, "tackle") | str_detect(PlayDescription, "tackles")), 1, 0))
+
 
 passes<-plays %>% 
-  group_by(GameKey) %>% 
+  group_by(GameKey,PossessionTeam, Season, Home_Team, Visit_Team, is_thurs) %>% 
   summarize(total_short =sum(short),
             total_short_l = sum(short_l), 
             total_shortr= sum(short_r), 
@@ -130,13 +137,73 @@ passes<-plays %>%
             total_deepl= sum(deep_l), 
             total_incm= sum(pass_incm), 
             total_passes = sum(pass), 
-            total_rough = sum(roughing)) %>% 
-  mutate(pass_accuracy = 1-(total_incm/total_passes))
+            total_rough = sum(roughing), 
+            total_interc = sum(interception), 
+            total_fumble =sum(fumbles), 
+            total_run = sum(run), 
+            total_btackle=sum(bad_tackle), 
+            total_badrun=sum(bad_run)) %>% 
+  mutate(pass_accuracy = 1-((total_incm+total_interc+total_fumble)/total_passes), 
+         total_runrun = total_run+total_btackle+total_badrun,
+         bad_runs = total_badrun +total_btackle, 
+         run_accuracy = 1-(bad_runs/total_runrun))
 #try abnd pip by gameid and filtered for thurs 
 #then filtered by non-thurs 
 #Create different 
 
-data
+
+
+
 
 ```
 
+#Graphs
+
+```{r}
+
+plot_accuracy<-function(team, acr){
+  team<-passes %>% 
+    filter(PossessionTeam==acr)
+
+a<-ggplot(team, aes(GameKey, run_accuracy))+
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE)+
+  labs(title =acr)+
+  ylim(0, 1)
+
+
+
+b<-ggplot(team, aes(GameKey, pass_accuracy))+
+  geom_point()+
+  geom_smooth(method="lm", se= FALSE)+
+  labs(title =acr)+
+  ylim(0,1)
+
+print(a)
+print(b)
+}
+
+plot_accuracy_hist<-function(team, acr){
+  team<-passes %>% 
+    filter(PossessionTeam==acr)
+
+a<-ggplot(team, aes(run_accuracy))+
+  geom_histogram()+
+  labs(title =acr)
+
+
+
+b<-ggplot(team, aes(pass_accuracy))+
+  geom_histogram()+
+  labs(title =acr)
+
+print(a)
+print(b)
+}
+
+
+plot_accuracy(pit, "PIT")
+plot_accuracy(blt, "BLT")
+plot_accuracy_hist(pit, "PIT")
+plot_accuracy_hist(blt, "BLT")
+```

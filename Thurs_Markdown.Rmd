@@ -21,7 +21,6 @@ pbp<-read.csv("data/pbp_Smith.csv")
 #Creation of 2 DFs (Thursday and Non Thursday)
 
 ```{r}
-
 #join DF
 data<-games %>% 
   left_join(pbp, by="GameKey")

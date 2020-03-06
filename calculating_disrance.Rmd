@@ -74,7 +74,10 @@ calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
 
 calc_domestic <- calc_domestic %>%
   mutate(distance = ifelse(distance_mile > 2000, "very far",
-                           ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close")))
+                           ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close"))) %>%
+  mutate(color_dis = ifelse(distance == "very far", "red",
+                        ifelse(distance == "far", "orange",
+                               "cyan")))
 
 domestic_distance <- calc_domestic %>%
   group_by(distance) %>%
@@ -136,24 +139,26 @@ travel_map <- mapping_team %>%
     label = mapping_team$Visit_Team,
     labelOptions = labelOptions(noHide = T))
 
-for (i in 1:nrow(mapping_team)) 
+for (i in 1:nrow(mapping_team)){
   
 travel_map <- travel_map %>%
   addPolylines(lat=c(mapping_team[i,]$Visit_lat,
                      mapping_team[i,]$Home_lat),
                lng=c(mapping_team[i,]$Visit_long,
-                     mapping_team[i,]$Home_long)) %>%
+                     mapping_team[i,]$Home_long),
+              color = mapping_team[i,]$color_dis) %>%
   addMarkers(
     lng = mapping_team[i,]$Home_long,
     lat = mapping_team[i,]$Home_lat,
     label = mapping_team[i,]$Home_Team,
     labelOptions = labelOptions(noHide = T))
+}
 
 return(travel_map)
 
 }
 
-mapping_travel("2016","Miami Dolphins")
+mapping_travel("2016","Los Angeles Rams")
 
 ```
 

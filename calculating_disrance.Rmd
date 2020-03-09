@@ -79,9 +79,9 @@ calc_domestic <- calc_domestic %>%
                         ifelse(distance == "far", "orange",
                                "cyan")))
 
-domestic_distance <- calc_domestic %>%
-  group_by(distance) %>%
-  summarise(num =n())
+# domestic_distance <- calc_domestic %>%
+#   group_by(distance) %>%
+#   summarise(num =n())
 
 total_dis<-function(year){
   
@@ -98,21 +98,22 @@ total_dis("2018") %>% View()
 ```
 
 ```{r}
-without_season_dis <- calc_domestic %>%
-  group_by(Home_Team,Visit_Team,distance_mile) %>%
-  summarise(num=n())
-
-season_dis <- calc_domestic %>%
-  group_by(Home_Team,Visit_Team,distance_mile,Season) %>%
-  summarise(num=n())
-
-season_num_games_home <- calc_domestic %>%
-  group_by(Home_Team,Season) %>%
-  summarise(host_num=n())
-
-season_num_games_visit <- calc_domestic %>%
-  group_by(Visit_Team,Season) %>%
-  summarise(visit_num=n())
+#some analysis
+# without_season_dis <- calc_domestic %>%
+#   group_by(Home_Team,Visit_Team,distance_mile) %>%
+#   summarise(num=n())
+# 
+# season_dis <- calc_domestic %>%
+#   group_by(Home_Team,Visit_Team,distance_mile,Season) %>%
+#   summarise(num=n())
+# 
+# season_num_games_home <- calc_domestic %>%
+#   group_by(Home_Team,Season) %>%
+#   summarise(host_num=n())
+# 
+# season_num_games_visit <- calc_domestic %>%
+#   group_by(Visit_Team,Season) %>%
+#   summarise(visit_num=n())
 
 ```
 

@@ -124,7 +124,10 @@ plays<-data %>%
          roughing= ifelse(str_detect(PlayDescription,"rough"), 1, 0), 
          run = ifelse(PlayResult>0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
          bad_run = ifelse(PlayResult<0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
-         bad_tackle = ifelse(PlayResult<0 & (str_detect(PlayDescription, "tackle") | str_detect(PlayDescription, "tackles")), 1, 0))
+         bad_tackle = ifelse(PlayResult<0 & (str_detect(PlayDescription, "tackle") | str_detect(PlayDescription, "tackles")), 1, 0),
+         possesion = ifelse(as.character(PossessionTeam)==as.character(HomeClubCode),1,0),
+         defense = ifelse((PlayResult<=0),1,0), 
+         defensive = ifelse((possesion==0), 1, 0))
 
 
 passes<-plays %>% 
@@ -142,7 +145,8 @@ passes<-plays %>%
             total_fumble =sum(fumbles), 
             total_run = sum(run), 
             total_btackle=sum(bad_tackle), 
-            total_badrun=sum(bad_run)) %>% 
+            total_badrun=sum(bad_run), 
+            ) %>% 
   mutate(pass_accuracy = 1-((total_incm+total_interc+total_fumble)/total_passes), 
          total_runrun = total_run+total_btackle+total_badrun,
          bad_runs = total_badrun +total_btackle, 
@@ -157,7 +161,7 @@ passes<-plays %>%
 
 ```
 
-#Graphs
+#Graphs Function
 
 ```{r}
 
@@ -206,4 +210,5 @@ plot_accuracy(pit, "PIT")
 plot_accuracy(blt, "BLT")
 plot_accuracy_hist(pit, "PIT")
 plot_accuracy_hist(blt, "BLT")
+plot_accuracy()
 ```

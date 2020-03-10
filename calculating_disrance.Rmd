@@ -209,7 +209,7 @@ return(travel_thurs_map)
 
 }
 
-mapping_travel("2016","Los Angeles Rams")
+mapping_thursday("2016","Los Angeles Rams")
 
 ```
 

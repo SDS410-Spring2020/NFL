@@ -1,3 +1,6 @@
+library(tidyverse)
+library(janitor)
+library(lubridate)
 #games
 games <-read.csv("data/games_Smith.csv") %>% 
   clean_names() %>%
@@ -22,7 +25,12 @@ data <- games %>%
 
 #fulldata_with_thurs 
 fulldata_with_thurs <- data %>% 
-  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0))
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs),
+         stadium = as.character(stadium),
+         home_team = as.character(home_team),
+         visit_team = as.character(visit_team),
+         location = as.character(location))
 
 #nfl_elo_2019 (cleaned)
 nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>% 

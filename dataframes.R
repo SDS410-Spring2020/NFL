@@ -1,5 +1,6 @@
 library(tidyverse)
 library(janitor)
+library(lubridate)
 #games
 games <-read.csv("data/games_Smith.csv") %>% 
   clean_names() %>%

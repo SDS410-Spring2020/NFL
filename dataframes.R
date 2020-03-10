@@ -22,7 +22,9 @@ data <- games %>%
 
 #fulldata_with_thurs 
 fulldata_with_thurs <- data %>% 
-  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0))
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs))
+
 
 #nfl_elo_2019 (cleaned)
 nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>% 

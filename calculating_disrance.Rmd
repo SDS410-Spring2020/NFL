@@ -27,8 +27,8 @@ library(magrittr)
 
 ```{r, include=FALSE}
 # importing data
-games<-read.csv("data/games_Smith.csv")
-pbp<-read.csv("data/pbp_Smith.csv")
+#games<-read.csv("data/games_Smith.csv")
+#pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
 visit_team_data <- read.csv("visit_team_data.csv")
 ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
@@ -36,6 +36,10 @@ all_data_coordinates <- read.csv("All_data_coordinates.csv")
 ```
 
 ```{r}
+#cleaning df column names to have a common variable with games (home_team)
+stadium_data_coordinates <- stadium_data_coordinates %>% 
+  clean_names() 
+
 games_w_coordinates <- games %>%
   inner_join(stadium_data_coordinates)
 

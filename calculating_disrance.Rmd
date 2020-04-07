@@ -83,9 +83,9 @@ calc_domestic <- calc_domestic %>%
                         ifelse(distance == "far", "orange",
                                "cyan")))
 
-# domestic_distance <- calc_domestic %>%
-#   group_by(distance) %>%
-#   summarise(num =n())
+domestic_distance <- calc_domestic %>%
+   group_by(distance) %>%
+   summarise(num =n())
 
 total_dis<-function(year){
   

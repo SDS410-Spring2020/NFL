@@ -123,31 +123,57 @@ sum_distance_season <- calc_domestic %>%
 
 sum_distance_all <- calc_domestic %>%
   group_by(Visit_Team) %>%
-  summarise(travel_dis =sum(distance_mile)) 
+  summarise(travel_dis =sum(distance_mile)) %>%
+  rename(Team = Visit_Team)
 
 
-num_games_season <- calc_domestic %>%
+num_games_season_visit <- calc_domestic %>%
   group_by(Visit_Team,Season) %>%
-  summarise(num_game =n())
+  summarise(num_game_visit =n())
 
-num_games_all <- calc_domestic %>%
-  group_by(Visit_Team) %>%
-  summarise(num_game =n())
+num_games_season_home <- calc_domestic %>%
+  group_by(Home_Team,Season) %>%
+  summarise(num_game_home =n())
+
 
 distance_season <- sum_distance_season %>%
-  left_join(num_games_season) %>%
-  mutate(avg_travel = travel_dis/num_game)
+  inner_join(num_games_season_visit) %>%
+  left_join(num_games_season_home)%>%
+  mutate(total_game = num_game_visit + num_game_home) %>%
+  mutate(avg_travel = travel_dis/total_game)
+
+
+
+num_games_visit <- calc_domestic %>%
+  group_by(Visit_Team) %>%
+  summarise(num_game_visit =n()) %>%
+  rename(Team = Visit_Team)
+
+num_games_home <- calc_domestic %>%
+  group_by(Home_Team) %>%
+  summarise(num_game_home =n()) %>%
+  rename(Team = Home_Team)
+
 
 
 distance_all <- sum_distance_all %>%
-  left_join(num_games_all) %>%
-  mutate(avg_travel = travel_dis/num_game)
+  inner_join(num_games_visit) %>%
+  left_join(num_games_home)%>%
+  mutate(total_game = num_game_visit + num_game_home) %>%
+  mutate(avg_travel = travel_dis/total_game)
 
 max(distance_all$avg_travel)-min(distance_all$avg_travel)
 ```
 
 
-
+```{r}
+# making the plot 
+ggplot(distance_all, aes(x=Team, y=avg_travel)) +
+  geom_bar(stat="identity") + 
+  coord_flip() + 
+  labs(y = "Average Travel Distance from 2007 to 2018 (miles)")
+  
+```
 
 
 ```{r}

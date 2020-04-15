@@ -11,7 +11,7 @@ nfl_elo <- nfl_elo %>%
   rename(HomeClubCode = team1, 
          VisitorClubCode = team2)
 
-#fivethirtyeight_nfl_codes <- distinct(nfl_elo, HomeClubCode)
+fivethirtyeight_nfl_codes <- distinct(nfl_elo, HomeClubCode)
 
 #reading in scraped data of team codes from nfl website 
 club_codes <- read.csv("nfl_club_codes.csv")

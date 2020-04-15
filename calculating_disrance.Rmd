@@ -22,13 +22,14 @@ library(dplyr)
 library(sp)
 library(leaflet)
 library(magrittr)
+library(janitor)
 ```
 
 
 ```{r, include=FALSE}
 # importing data
-#games<-read.csv("data/games_Smith.csv")
-#pbp<-read.csv("data/pbp_Smith.csv")
+games<-read.csv("data/games_Smith.csv")
+pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
 visit_team_data <- read.csv("visit_team_data.csv")
 ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
@@ -38,7 +39,10 @@ all_data_coordinates <- read.csv("All_data_coordinates.csv")
 ```{r}
 #cleaning df column names to have a common variable with games (home_team)
 stadium_data_coordinates <- stadium_data_coordinates %>% 
-  clean_names() 
+  clean_names() %>%
+  rename(Stadium = stadium) %>%
+  rename(Home_Team = home_team) %>%
+  rename(Season = season)
 
 games_w_coordinates <- games %>%
   inner_join(stadium_data_coordinates)
@@ -83,9 +87,9 @@ calc_domestic <- calc_domestic %>%
                         ifelse(distance == "far", "orange",
                                "cyan")))
 
-# domestic_distance <- calc_domestic %>%
-#   group_by(distance) %>%
-#   summarise(num =n())
+domestic_distance <- calc_domestic %>%
+   group_by(distance) %>%
+   summarise(num =n())
 
 total_dis<-function(year){
   
@@ -97,9 +101,111 @@ sum.distance <- calc_domestic %>%
   return(sum.distance)
 }
 
-total_dis("2018") %>% View()
+# total distance traveld per season
+
+# distance_2007_sum <- total_dis("2007")
+# distance_2008_sum <- total_dis("2008") 
+# distance_2009_sum <- total_dis("2009")
+# distance_2010_sum <- total_dis("2010")
+# distance_2011_sum <- total_dis("2011")
+# distance_2012_sum <- total_dis("2012")
+# distance_2013_sum <- total_dis("2013")
+# distance_2014_sum <- total_dis("2014")
+# distance_2015_sum <- total_dis("2015")
+# distance_2016_sum <- total_dis("2016")
+# distance_2017_sum <- total_dis("2017")
+# distance_2018_sum <- total_dis("2018")
 
 ```
+
+
+## Getting total distance for each team from 2007-2018
+```{r}
+sum_distance_season <- calc_domestic %>%
+  group_by(Visit_Team,Season) %>%
+  summarise(travel_dis =sum(distance_mile))  %>%
+  rename(Team = Visit_Team)
+
+num_games_season_visit <- calc_domestic %>%
+  group_by(Visit_Team,Season) %>%
+  summarise(num_game_visit =n()) %>%
+  rename(Team = Visit_Team)
+
+# function to get sem
+se <- function(x) sqrt(var(x)/length(x))
+
+# get sem
+games_season_sem <- calc_domestic %>%
+  group_by(Visit_Team,Season) %>%
+  summarise(sem=se(distance_mile)) %>%
+  rename(Team=Visit_Team)
+
+num_games_season_home <- calc_domestic %>%
+  group_by(Home_Team,Season) %>%
+  summarise(num_game_home =n()) %>%
+  rename(Team = Home_Team)
+
+distance_season <- sum_distance_season %>%
+  inner_join(num_games_season_visit) %>%
+  inner_join(num_games_season_home)%>%
+  mutate(total_game = num_game_visit + num_game_home) %>%
+  inner_join(games_season_sem) %>%
+  mutate(avg_travel = travel_dis/total_game)
+
+
+sum_distance_all <- calc_domestic %>%
+  group_by(Visit_Team) %>%
+  summarise(travel_dis =sum(distance_mile)) %>%
+  rename(Team = Visit_Team)
+
+
+num_games_visit <- calc_domestic %>%
+  group_by(Visit_Team) %>%
+  summarise(num_game_visit =n()) %>%
+  rename(Team = Visit_Team)
+
+num_games_home <- calc_domestic %>%
+  group_by(Home_Team) %>%
+  summarise(num_game_home =n()) %>%
+  rename(Team = Home_Team)
+
+
+# get the standard error mean for travel distance
+all_games_sem <- calc_domestic %>%
+  group_by(Visit_Team) %>%
+  summarise(sem = se(distance_mile)) 
+
+
+distance_all <- sum_distance_all %>%
+  inner_join(num_games_visit) %>%
+  left_join(num_games_home)%>%
+  mutate(total_game = num_game_visit + num_game_home) %>%
+  mutate(avg_travel = travel_dis/total_game)
+
+# max(distance_all$avg_travel)-min(distance_all$avg_travel)
+```
+
+
+```{r}
+# making the plot 
+ggplot(distance_all, aes(x=Team, y=avg_travel)) +
+  geom_bar(stat="identity") + 
+  coord_flip() + 
+  labs(y = "Average Travel Distance from 2007 to 2018 (miles)")
+  
+```
+
+```{r}
+# facet wrap by season
+# making the plot --> need a way to look at the each team names
+ggplot(distance_season, aes(x=Team, y=avg_travel)) +
+  geom_bar(stat="identity") + 
+  coord_flip() + 
+  labs(y = "Average Travel Distance from 2007 to 2018 (miles)") +
+  facet_wrap(vars(Season))
+```
+
+
 
 ```{r}
 #some analysis
@@ -213,7 +319,7 @@ return(travel_thurs_map)
 
 }
 
-mapping_travel("2016","Los Angeles Rams")
+mapping_thursday("2016","Los Angeles Rams")
 
 ```
 

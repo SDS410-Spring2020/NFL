@@ -30,7 +30,17 @@ fulldata_with_thurs <- data %>%
          stadium = as.character(stadium),
          home_team = as.character(home_team),
          visit_team = as.character(visit_team),
-         location = as.character(location))
+         location = as.character(location),
+         game_key = as.factor(game_key), 
+         season = as.factor(season),
+         week = as.factor(week),
+         game_weather = as.character(game_weather),
+         wind_speed = as.character(wind_speed),
+         wind_direction = as.character(wind_direction),
+         quarter = as.factor(quarter),
+         play_description = as.character(play_description),
+         down = as.factor(down),
+         is_scoring_play = as.factor(is_scoring_play))
 
 #nfl_elo_2019 (cleaned)
 nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>% 

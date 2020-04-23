@@ -24,6 +24,13 @@ library(leaflet)
 library(magrittr)
 library(janitor)
 library(lubridate)
+#  install.packages("infer")
+library(infer)
+# install.packages("ggridges")
+library(ggridges)
+library(scales)
+
+set.seed(1234)
 ```
 
 
@@ -96,7 +103,7 @@ calc_domestic <- calc_domestic %>%
 ```
 
 
-```{r}
+```{r, warning=FALSE}
 # create a dataset which summarised the total travel distance on Thursday or not Thursday 
 
 sum_distance_season <- calc_domestic %>%
@@ -145,7 +152,9 @@ num_games_visit <- calc_domestic %>%
 num_games_home <- calc_domestic %>%
   group_by(Home_Team,is_thurs) %>%
   summarise(num_game_home =n()) %>%
-  rename(Team = Home_Team)
+  rename(Team = Home_Team) 
+
+
 
 
 # get the standard error mean for travel distance
@@ -156,37 +165,70 @@ all_games_sem <- calc_domestic %>%
 
 distance_all <- sum_distance_all %>%
   inner_join(num_games_visit) %>%
-  left_join(num_games_home)%>%
+  left_join(num_games_home)
+
+distance_all[is.na(distance_all)] <- 0
+
+distance_all<- distance_all %>%
+  mutate(num_game_visit = as.numeric(num_game_visit))%>%
   mutate(total_game = num_game_visit + num_game_home) %>%
-  mutate(avg_travel = travel_dis/total_game)
+  mutate(avg_travel = travel_dis/total_game) 
 
-# max(distance_all$avg_travel)-min(distance_all$avg_travel)
+distance_all <- distance_all %>%
+    mutate(is_thurs = recode(is_thurs,
+                         "1" = "Thursday games",
+                         "0" = "Not Thursday games")) %>%
+  mutate(is_thurs = as.character(is_thurs))
+
+
+# str(distance_all)
 ```
-15 thurs vs 30 sun
-mix 45 take the average 
-randomly assign thurs and suns 
-sometimes diff is 0 or grater than 0 
-find the average 
-do in a loop --> and make a distribution
-and compare statistics between the data 
-compare the mean mean and the distribution mean 
 
-sample()
-vector or all sunday and thurs so no team names 
+```{r}
+# run a permutation test 
 
-shuffle the thursday or sunday order but keep the # of sun and thursday 
---> infer package
-
-two sample t-test difference in mean 
-use t-distribution maynot --> permutation 
-
-hypothesize 
+# mean difference thurs - not thurs
+diff_distance <- distance_all %>% 
+  specify(avg_travel ~ is_thurs) %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+diff_distance
 
 
-ex) 
- specify(am ~ vs, success = "1") %>%
+# generate samples 
+null_distance <- distance_all %>%
+  specify(avg_travel ~ is_thurs) %>%
   hypothesize(null = "independence") %>%
-  generate(reps = 100, type = "permute")
+  generate(reps = 5000, type = "permute") %>%
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
 
 
+
+null_distance %>% 
+  get_pvalue(obs_stat = diff_distance, direction = "both")
+
+
+# the p-value is 0.094, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
+
+# --> no statistically significant difference between the two 
+```
+
+```{r,message=FALSE}
+ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
+  labs(x = "Average travel distance from 2007 to 2018", y = NULL) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+```
+
+```{r}
+null_distance %>% 
+  visualise() +
+  shade_p_value(obs_stat = diff_distance,direction = "both") + 
+  labs(x = "Difference in mean travel distance\n(Not Thursday games − Thursday games)",
+       y = "Count",
+       subtitle = "Red line shows observed difference in mean travel distances") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank()) 
+```
 

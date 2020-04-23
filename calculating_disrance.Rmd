@@ -323,5 +323,31 @@ mapping_thursday("2016","Los Angeles Rams")
 
 ```
 
+```{r}
+# run a permutation test
+
+mean(distance_all$avg_travel)
+# overall mean is 485.956
+
+permutation_dis <- distance_all%>%
+  mutate(over_mean = ifelse(avg_travel > mean(avg_travel), 'more_travel', 'less_travel')) 
+
+mean_diff_travel<- permutation_dis%>%
+  group_by(over_mean)%>%
+  summarise(Mean = mean(avg_travel))
+
+mean_diff_travel
+
+# differences between the two means
+666.9743-387.2188
+
+permutation_dis %>% 
+  group_by(over_mean) %>%
+  summarise(num_team = n())
+
+choose(34,12)
+
+# regrouping = 548354040
+```
 
 

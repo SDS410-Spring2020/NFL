@@ -6,22 +6,16 @@ library(tidyverse)
 library(lubridate)
 
 #reading in the two nfl data frames 
-#games <- read.csv("data/games_Smith.csv")
-#pbp<- read.csv("data/pbp_Smith.csv")
+games <- read.csv("data/games_Smith.csv")
+pbp<- read.csv("data/pbp_Smith.csv")
 
 #reading in nfl elo data from FiveThirtyEight
-#nfl_elo_2019 <- read.csv("nfl_elo_latest.csv")
-#nfl_elo <- read.csv("nfl_elo.csv")
+nfl_elo_2019 <- read.csv("nfl_elo_latest.csv")
+nfl_elo <- read.csv("nfl_elo.csv")
 
 #create merged df 
-#combined_df <- games %>% 
-#  inner_join(pbp, by="GameKey")
-
-#Data frames used in this script: 
-# - data
-# - nfl_elo
-# - nfl_elo_2019 
-# - full_data_wtih_thurs
+combined_df <- games %>% 
+  inner_join(pbp, by="GameKey")
 
 #add a thursday column
 fulldata_with_thurs <- combined_df %>% 
@@ -41,9 +35,9 @@ combined_all <- fulldata_with_thurs %>%
                      Quarter == 3 ~ GameClock + 1800,
                      Quarter == 4 ~ GameClock + 2700,
                      Quarter == 5 ~ GameClock + 3600))
-s
+--------------------------------------------------------
 #data for visualization1 below
-ep_blt_vs_pit <- fulldata_with_thurs %>% 
+ep_blt_vs_pit <- combined_all %>% 
   filter(HomeClubCode %in% c("BLT","PIT"),
          VisitorClubCode %in% c("BLT", "PIT"),
          Season == "2010") %>%
@@ -73,12 +67,10 @@ team_dep <- function(team, year) {
   return(dep_plot) 
 }
 
-function_name <- function(x) {
-  output <- x * 2
-  return(output)
-}
-function_name(5)
 #creating variables ep1 and ep2: expected points for home team and expected points for visitor team 
+#the expected points for team changes play by play. only the expected points of the possession team 
+# will change. ep1 and ep2 lets us see the expected points for the possession team for each play in
+# a game. 
 ep_both_teams <- combined_all %>% 
   mutate(is_home = ifelse(as.character(HomeClubCode) == as.character(PossessionTeam), 1, 0),
          is_visitor = 
@@ -92,36 +84,6 @@ ep_both_teams <- combined_all %>%
            case_when(
              is_visitor == 1 ~ ep,
              is_visitor == 0 ~ 0))
-
-#clean nfl_elo data with correct team codes 
-new_nfl_elo <- nfl_elo %>% 
-  mutate(
-    HomeClubCode = 
-      case_when(
-        as.character(HomeClubCode) == "HOU" ~ "HST",
-        as.character(HomeClubCode) == "LAR" ~ "SL",
-        as.character(HomeClubCode) == "WSH" ~ "WAS", 
-        as.character(HomeClubCode) == "CLE" ~ "CLV",
-        as.character(HomeClubCode) == "BAL" ~ "BLT",
-        as.character(HomeClubCode) == "ARI" ~ "ARZ",
-        as.character(HomeClubCode) == "LAC" & as.character(season) >= "2017" ~ "SD",
-        as.character(HomeClubCode) == "LAC" & as.character(season) <= "2016" ~ "LA",
-        TRUE ~ as.character(HomeClubCode)), 
-    VisitorClubCode = 
-      case_when(
-        as.character(VisitorClubCode) == "HOU" ~ "HST",
-        as.character(VisitorClubCode) == "LAR" ~ "SL",
-        as.character(VisitorClubCode) == "WSH" ~ "WAS", 
-        as.character(VisitorClubCode) == "CLE" ~ "CLV",
-        as.character(VisitorClubCode) == "BAL" ~ "BLT",
-        as.character(VisitorClubCode) == "ARI" ~ "ARZ",
-        as.character(VisitorClubCode) == "LAC" & as.character(season) >= "2017" ~ "SD",
-        as.character(VisitorClubCode) == "LAC" & as.character(season) <= "2016" ~ "LA",
-        TRUE ~ as.character(VisitorClubCode)))
-
-#merge new_nfl_elo and combined_all 
-full_with_elo= merge(new_nfl_elo, combined_all, 
-            by.x=c("HomeClubCode", "VisitorClubCode", "date"), by.y=c("HomeClubCode", "VisitorClubCode", "date"))
 
 #filter only afc teams 
 afc <- full_with_elo %>% 

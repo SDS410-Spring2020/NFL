@@ -1,0 +1,374 @@
+---
+title: "Rankings Visualizations"
+author: "Lizette Carpenter"
+date: "4/24/2020"
+output:
+  html_document: 
+      toc: true
+      collapsed: false
+      smooth_scroll: false
+
+---
+
+# Load libraries 
+```{r message = FALSE}
+library(tidyverse)
+library(janitor)
+library(lubridate)
+```
+
+# Data Wrangling: 
+
+The following are dataframes needed to generate the visualizations. 
+
+## games
+```{r}
+games <-read.csv("data/games_Smith.csv") %>% 
+  clean_names() %>%
+  mutate(game_date = str_replace(game_date, "T00:00:00Z", ""),
+         game_date = as.Date(game_date, "%Y-%m-%d")) 
+```
+
+## pbp
+```{r}
+pbp<-read.csv("data/pbp_Smith.csv") %>% 
+  clean_names() %>% 
+  mutate(
+    game_clock = as.numeric(as.period(ms(game_clock), unit = "sec")),
+    game_clock = 
+      case_when(quarter == 1 ~ game_clock,
+                quarter == 2 ~ game_clock + 900,
+                quarter == 3 ~ game_clock + 1800,
+                quarter == 4 ~ game_clock + 2700,
+                quarter == 5 ~ game_clock + 3600))
+```
+
+## data (combined) 
+```{r}
+data <- games %>% 
+  left_join(pbp, by="game_key")
+#note: NAs for 2007-2010 in pbp
+```
+
+## fulldata_with_thurs 
+```{r}
+fulldata_with_thurs <- data %>% 
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
+  mutate(is_thurs = as.factor(is_thurs),
+         stadium = as.character(stadium),
+         home_team = as.character(home_team),
+         visit_team = as.character(visit_team),
+         location = as.character(location),
+         game_key = as.factor(game_key), 
+         season = as.factor(season),
+         week = as.factor(week),
+         game_weather = as.character(game_weather),
+         wind_speed = as.character(wind_speed),
+         wind_direction = as.character(wind_direction),
+         quarter = as.factor(quarter),
+         play_description = as.character(play_description),
+         down = as.factor(down),
+         is_scoring_play = as.factor(is_scoring_play))
+```
+
+## nfl_elo_2019
+```{r}
+nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>% 
+  clean_names() %>% 
+  rename(
+    home_club_code = team1, 
+    visitor_club_code = team2) %>% 
+  mutate(
+    game_date = as.Date(date, "%Y-%m-%d"),
+    home_club_code = 
+      case_when(
+        as.character(home_club_code) == "HOU" ~ "HST",
+        as.character(home_club_code) == "LAR" ~ "SL",
+        as.character(home_club_code) == "WSH" ~ "WAS", 
+        as.character(home_club_code) == "CLE" ~ "CLV",
+        as.character(home_club_code) == "BAL" ~ "BLT",
+        as.character(home_club_code) == "ARI" ~ "ARZ",
+        as.character(home_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(home_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(home_club_code)), 
+    visitor_club_code = 
+      case_when(
+        as.character(visitor_club_code) == "HOU" ~ "HST",
+        as.character(visitor_club_code) == "LAR" ~ "SL",
+        as.character(visitor_club_code) == "WSH" ~ "WAS", 
+        as.character(visitor_club_code) == "CLE" ~ "CLV",
+        as.character(visitor_club_code) == "BAL" ~ "BLT",
+        as.character(visitor_club_code) == "ARI" ~ "ARZ",
+        as.character(visitor_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(visitor_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(visitor_club_code)))
+```
+
+## nfl_elo
+```{r}
+nfl_elo <- read.csv("nfl_elo.csv") %>% 
+  clean_names() %>% 
+  rename(
+    home_club_code = team1, 
+    visitor_club_code = team2) %>% 
+  mutate(
+    game_date = as.Date(date, "%Y-%m-%d"), 
+    home_club_code = 
+      case_when(
+        as.character(home_club_code) == "HOU" ~ "HST",
+        as.character(home_club_code) == "LAR" ~ "SL",
+        as.character(home_club_code) == "WSH" ~ "WAS", 
+        as.character(home_club_code) == "CLE" ~ "CLV",
+        as.character(home_club_code) == "BAL" ~ "BLT",
+        as.character(home_club_code) == "ARI" ~ "ARZ",
+        as.character(home_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(home_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(home_club_code)), 
+    visitor_club_code = 
+      case_when(
+        as.character(visitor_club_code) == "HOU" ~ "HST",
+        as.character(visitor_club_code) == "LAR" ~ "SL",
+        as.character(visitor_club_code) == "WSH" ~ "WAS", 
+        as.character(visitor_club_code) == "CLE" ~ "CLV",
+        as.character(visitor_club_code) == "BAL" ~ "BLT",
+        as.character(visitor_club_code) == "ARI" ~ "ARZ",
+        as.character(visitor_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(visitor_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(visitor_club_code)))
+```
+
+## full_with_elo 
+```{r}
+full_with_elo= merge(nfl_elo, 
+                     fulldata_with_thurs, 
+                     by.x=c("home_club_code", "visitor_club_code", "game_date"), 
+                     by.y=c("home_club_code", "visitor_club_code", "game_date")) 
+
+full_with_elo <- full_with_elo %>% 
+  mutate(
+    is_home = ifelse(as.character(home_club_code) == as.character(possession_team), 1, 0),
+    is_visitor =
+      case_when(is_home == 1 ~ 0,
+                is_home == 0 ~ 1),
+    ep1 = 
+      case_when(
+      is_home == 1 ~ ep, 
+      is_home == 0 ~ 0),
+    ep2 = 
+      case_when(
+        is_visitor == 1 ~ ep,
+        is_visitor == 0 ~ 0))
+# new variables ep1 and ep2: expected points for home team (ep1) and expected points for visitor team (ep2).
+# The expected points for only the possesion team changes play by play. The expected points for the defensive team would be 0.  
+# ep1 and ep2 lets us see the expected points for the possession team for each play in a game. 
+```
+
+# Filters 
+## AFC Teams
+```{r}
+#filter only afc teams 
+afc <- full_with_elo %>% 
+  filter(home_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                             "BLT", "CIN", "CLE", "PIT",
+                             "HOU", "IND", "JAC", "TEN",
+                             "DEN", "KC", "OAK"),
+         visitor_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                                "BLT", "CIN", "CLE", "PIT",
+                                "HOU", "IND", "JAC", "TEN",
+                                "DEN", "KC", "OAK"))
+```
+
+# Data Visualizations 
+
+## Change in Expected Points 
+
+### 1. Change of ep for BLT vs. PIT during their games in 2010 
+
+```{r}
+ep_blt_vs_pit <- full_with_elo %>% 
+  filter(home_club_code %in% c("BLT","PIT"),
+         visitor_club_code %in% c("BLT", "PIT"),
+         season.y == "2010") %>%
+  select(game_key, date, season.y, game_clock, possession_team, ep) 
+```
+
+```{r}
+blt_vs_pit_2010 <- ggplot(data = ep_blt_vs_pit, aes(x = game_clock, y = ep, color = possession_team)) +
+  geom_line() + 
+  facet_wrap(facets = "date", nrow = 5) + 
+  ggtitle(label = "Change of ep for BLT vs. PIT Games in 2010.", subtitle = "Shows Offensive Team Production") 
+blt_vs_pit_2010
+```
+
+
+### Function that shows the Change of Ep
+```{r}
+# This function takes in team and year and outputs the expected points of the home team for each game of the in a given year.  
+
+team_dep <- function(team, year) { 
+  dep_data <- full_with_elo %>% 
+    filter(home_club_code == team,
+           season.y == year) %>% 
+    select(game_key, date, season.y, game_clock, possession_team, ep)
+  
+  dep_plot <- ggplot(data = dep_data, aes(x = game_clock, y = ep, color = possession_team)) +
+    geom_line() + 
+    facet_wrap(facets = "date", nrow = 5) + 
+    ggtitle(label = "Change of Expected Points in Games", subtitle = "Shows Offensive Team Production") 
+  
+  return(dep_plot) 
+}
+```
+
+### 2. Change of Expected Points for the offensive team for all Baltimore games in 2010 
+```{r}
+# example using above team_dep(): 
+team_dep("BLT", "2010")
+```
+
+## Using Elo Ratings 
+
+### 1. Pittsburg's Elo Rating Before Games in 2019 (as home team)
+
+```{r}
+pit_full_home <- full_with_elo %>%
+  filter(home_club_code == "PIT", 
+         season.y == "2019") 
+```
+
+```{r}
+pit_home_elo <- ggplot(data = pit_full_home, aes(x = date, y = elo1_pre)) +
+  geom_line() + 
+  geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
+  theme_bw() +
+  geom_text(aes(label=visitor_club_code), hjust=0, vjust=0) +
+  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the home team.") 
+pit_home_elo
+```
+
+
+### 2: Pittsburg's Elo Rating Before Games in 2019 (as home team)
+
+```{r}
+pit_full_visitor <- full_with_elo %>%
+  filter(visitor_club_code == "PIT", 
+         season.y == "2019") 
+```
+
+```{r}
+pit_visitor_elo <- ggplot(data = pit_full_visitor, aes(x = date, y = elo2_pre)) +
+  geom_line() + 
+  geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
+  theme_bw() +
+  geom_text(aes(label=home_club_code), hjust=0, vjust=0) +
+  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the visitor team.") 
+pit_visitor_elo
+```
+### 3. Change in Elo of Home and Visitor Team in a Game. 
+
+```{r}
+ggplot(data = full_with_elo, aes(x = elo1_pre)) +
+  geom_density(kernel = "rectangular") +
+  ggtitle("Distribution of Home ELO")
+```
+
+
+#plot epa on thurs vs sunday - density
+```{r}
+ggplot(data = full_with_elo, aes(x = elo1_pre)) +
+  geom_density(kernel = "rectangular", aes(color = game_day)) +
+  ggtitle("Distribution of Home ELO by gameday") 
+```
+
+
+
+```{r}
+elo_afc <- full_with_elo %>% 
+  select(game_date, is_thurs, home_club_code, visitor_club_code, elo1_pre, game_day) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
+  filter(home_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                             "BLT", "CIN", "CLE", "PIT",
+                             "HOU", "IND", "JAC", "TEN",
+                             "DEN", "KC", "OAK"),
+         visitor_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                                "BLT", "CIN", "CLE", "PIT",
+                                "HOU", "IND", "JAC", "TEN",
+                                "DEN", "KC", "OAK")) %>% 
+  group_by(home_club_code, is_thurs) %>% 
+  distinct(game_date, elo1_pre) %>% 
+  arrange(game_date) %>% 
+  summarise(elo_rank = mean(elo1_pre)) 
+```
+
+
+```{r}
+afc_elo_home <- ggplot(data = elo_afc, aes(x = home_club_code, y = elo_rank, fill = as.factor(is_thurs))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme(axis.text.x = element_text(angle=90)) +
+  ggtitle(label = "Comparing mean elo rankings", subtitle = "Offensive Production on Thursday  vs. Sunday") +
+  labs(fill = "Is_Thurs")
+afc_elo_home
+```
+
+```{r}
+elo_afc_season <- full_with_elo %>% 
+  select(game_date, is_thurs, home_club_code, visitor_club_code, elo1_pre, game_day, season.x) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
+  filter(home_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                             "BLT", "CIN", "CLE", "PIT",
+                             "HOU", "IND", "JAC", "TEN",
+                             "DEN", "KC", "OAK"),
+         visitor_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                                "BLT", "CIN", "CLE", "PIT",
+                                "HOU", "IND", "JAC", "TEN",
+                                "DEN", "KC", "OAK")) %>% 
+  group_by(home_club_code, season.x, is_thurs) %>% 
+  summarise(elo_rank = mean(elo1_pre)) 
+```
+
+```{r}
+elo_rank_season <- ggplot(data = elo_afc_season, aes(x = home_club_code, y = elo_rank, fill = as.factor(is_thurs))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme(axis.text.x = element_text(angle=90)) +
+  facet_wrap(vars(season.x), nrow = 3) +
+  ggtitle(label = "Comparing mean elo winning probabilities", subtitle = "Winning Probabilities on Thursday  vs. Sunday") +
+  labs(fill = "Is_Thurs")
+elo_rank_season
+```
+
+```{r}
+elo_win_afc <- full_with_elo %>% 
+  select(game_date, is_thurs, home_club_code, visitor_club_code, elo1_pre, elo_prob1, game_day, season.x) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
+  filter(home_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                             "BLT", "CIN", "CLE", "PIT",
+                             "HOU", "IND", "JAC", "TEN",
+                             "DEN", "KC", "OAK"),
+         visitor_club_code %in% c("BUF", "MIA", "NEP", "NYJ",
+                                "BLT", "CIN", "CLE", "PIT",
+                                "HOU", "IND", "JAC", "TEN",
+                                "DEN", "KC", "OAK")) %>% 
+  group_by(home_club_code, is_thurs, season.x) %>% 
+  summarise(win_prob = mean(elo_prob1)) 
+```
+
+```{r}
+elo_win_afc_plot <- ggplot(data = elo_win_afc, aes(x = home_club_code, y = win_prob, fill = as.factor(is_thurs))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme(axis.text.x = element_text(angle=90)) +
+  facet_wrap(vars(season.x), nrow = 3) +
+  ggtitle(label = "Comparing mean elo winning probabilities", subtitle = "Winning Probabilities on Thursday  vs. Sunday") +
+  labs(fill = "Is_Thurs")
+elo_win_afc_plot
+```
+
+
+```{r}
+thurs_count <- full_with_elo %>% 
+  select(game_date, home_club_code, game_day, season.x, elo_prob1) %>% 
+  distinct(game_date, .keep_all = TRUE) %>% 
+  group_by(home_club_code, season.x, game_day) %>% 
+  tally() %>% 
+  arrange(home_club_code,season.x)
+```

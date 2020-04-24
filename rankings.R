@@ -41,7 +41,7 @@ combined_all <- fulldata_with_thurs %>%
                      Quarter == 3 ~ GameClock + 1800,
                      Quarter == 4 ~ GameClock + 2700,
                      Quarter == 5 ~ GameClock + 3600))
-s
+
 #data for visualization1 below
 ep_blt_vs_pit <- fulldata_with_thurs %>% 
   filter(HomeClubCode %in% c("BLT","PIT"),

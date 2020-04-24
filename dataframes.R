@@ -18,6 +18,7 @@ pbp<-read.csv("data/pbp_Smith.csv") %>%
                 quarter == 4 ~ game_clock + 2700,
                 quarter == 5 ~ game_clock + 3600))
 
+
 #data (combined)
 data <- games %>% 
   left_join(pbp, by="game_key")
@@ -26,6 +27,7 @@ data <- games %>%
 #fulldata_with_thurs 
 fulldata_with_thurs <- data %>% 
   mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
   mutate(is_thurs = as.factor(is_thurs),
          stadium = as.character(stadium),
          home_team = as.character(home_team),

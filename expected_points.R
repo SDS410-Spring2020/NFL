@@ -1,17 +1,43 @@
 #load tidyverse
 library(tidyverse)
 
-#reading in the two nfl data frames 
-games <- read.csv("data/games_Smith.csv")
-pbp<- read.csv("data/pbp_Smith.csv")
+pbp <- read.csv("data/pbp_Smith.csv") %>% 
+  clean_names()
 
-#create merged df 
-combined_df <- games %>% 
-  inner_join(pbp, by="GameKey")
+data <- games %>% 
+  inner_join(pbp, by="game_key") %>% 
+  filter(game_day == "Thursday"| game_day == "Sunday")
 
-#add a thursday column
-fulldata_with_thurs <- combined_df %>% 
-  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
+#Using Tom's code
+epa_df <- data %>% 
+  mutate(quarter = as.numeric(quarter)) %>% 
+  mutate(half = ifelse(quarter < 3, 1, ifelse(quarter == 5, 3, 2))) %>%
+  #grouping by game and half because EPA does not carry over halves or games
+  group_by(game_key, half) %>%
+  #make sure plays are in correct order
+  arrange(game_key, play_id) %>%
+  #calculating EPA - ADDED: if possession changes EPA must be calculated differently
+  mutate(epa = 
+           ifelse(possession_team == lead(possession_team),
+                  lead(ep) - ep,
+                  -lead(ep) - ep)
+  ) %>%
+  ungroup()
+
+#view epa distribution
+ggplot(data = epa_df, aes(x = epa)) +
+  geom_density(kernel = "rectangular") +
+  ggtitle("Distribution of EPA")
+
+#plot epa on thurs vs sunday - density
+ggplot(data = epa_df, aes(x = epa)) +
+  geom_density(kernel = "rectangular", aes(color = game_day)) +
+  ggtitle("Distribution of EPA by gameday") 
+
+#plot epa on thurs vs sunday - boxplots
+ggplot(data = epa_df, aes(y = epa)) +
+  geom_boxplot(aes(color = game_day)) +
+  ggtitle("comparing thursday and sunday games")
 
 #wrangle 
 ep_df_2 <- fulldata_with_thurs %>% 

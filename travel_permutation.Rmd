@@ -209,7 +209,7 @@ null_distance %>%
 
 # the p-value is 0.094, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
 
-# --> no statistically significant difference between the two 
+# --> not statistically significant difference between the two 
 
 
 ```
@@ -226,6 +226,8 @@ ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
 # add title 
 
 # look at the last score equal, final margin of victory (home score vs visitor score (true or false for win) and margin will be the difference) 
+
+# quantitative variables: 
 ```
 
 ```{r}

@@ -160,7 +160,11 @@ summary(m1)
 
 m2<-lm(run_accuracy~distance_mile +distance +distance*distance_mile, new_data1)
 summary(m2)
-```
+
+attach(new_data1)
+cor.test(run_accuracy, distance_mile)
+cor.test(pass_accuracy, distance_mile)
+5t```
 
 
 

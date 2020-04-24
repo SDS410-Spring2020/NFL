@@ -18,6 +18,7 @@ pbp<-read.csv("data/pbp_Smith.csv") %>%
                 quarter == 4 ~ game_clock + 2700,
                 quarter == 5 ~ game_clock + 3600))
 
+
 #data (combined)
 data <- games %>% 
   left_join(pbp, by="game_key")
@@ -26,11 +27,22 @@ data <- games %>%
 #fulldata_with_thurs 
 fulldata_with_thurs <- data %>% 
   mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
   mutate(is_thurs = as.factor(is_thurs),
          stadium = as.character(stadium),
          home_team = as.character(home_team),
          visit_team = as.character(visit_team),
-         location = as.character(location))
+         location = as.character(location),
+         game_key = as.factor(game_key), 
+         season = as.factor(season),
+         week = as.factor(week),
+         game_weather = as.character(game_weather),
+         wind_speed = as.character(wind_speed),
+         wind_direction = as.character(wind_direction),
+         quarter = as.factor(quarter),
+         play_description = as.character(play_description),
+         down = as.factor(down),
+         is_scoring_play = as.factor(is_scoring_play))
 
 #nfl_elo_2019 (cleaned)
 nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>% 

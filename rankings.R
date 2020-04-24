@@ -6,22 +6,16 @@ library(tidyverse)
 library(lubridate)
 
 #reading in the two nfl data frames 
-#games <- read.csv("data/games_Smith.csv")
-#pbp<- read.csv("data/pbp_Smith.csv")
+games <- read.csv("data/games_Smith.csv")
+pbp<- read.csv("data/pbp_Smith.csv")
 
 #reading in nfl elo data from FiveThirtyEight
-#nfl_elo_2019 <- read.csv("nfl_elo_latest.csv")
-#nfl_elo <- read.csv("nfl_elo.csv")
+nfl_elo_2019 <- read.csv("nfl_elo_latest.csv")
+nfl_elo <- read.csv("nfl_elo.csv")
 
 #create merged df 
-#combined_df <- games %>% 
-#  inner_join(pbp, by="GameKey")
-
-#Data frames used in this script: 
-# - data
-# - nfl_elo
-# - nfl_elo_2019 
-# - full_data_wtih_thurs
+combined_df <- games %>% 
+  inner_join(pbp, by="GameKey")
 
 #add a thursday column
 fulldata_with_thurs <- combined_df %>% 
@@ -43,7 +37,7 @@ combined_all <- fulldata_with_thurs %>%
                      Quarter == 5 ~ GameClock + 3600))
 
 #data for visualization1 below
-ep_blt_vs_pit <- fulldata_with_thurs %>% 
+ep_blt_vs_pit <- combined_all %>% 
   filter(HomeClubCode %in% c("BLT","PIT"),
          VisitorClubCode %in% c("BLT", "PIT"),
          Season == "2010") %>%

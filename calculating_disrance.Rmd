@@ -11,94 +11,125 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 # importing libraries
-library(datasets)
+#library(datasets)
 library(maps)
 library(tidyr)
 library(tidyverse)
 library(readr)
-# install.packages("geosphere")
 library(geosphere)
-library(dplyr)
 library(sp)
 library(leaflet)
 library(magrittr)
 library(janitor)
 ```
 
+Before knit this document, run code in dataframes.R 
 
 ```{r, include=FALSE}
 # importing data
-games<-read.csv("data/games_Smith.csv")
-pbp<-read.csv("data/pbp_Smith.csv")
+#games<-read.csv("data/games_Smith.csv")
+#pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
 visit_team_data <- read.csv("visit_team_data.csv")
-ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
-all_data_coordinates <- read.csv("All_data_coordinates.csv")
+#ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
+#all_data_coordinates <- read.csv("All_data_coordinates.csv")
 ```
+
 
 ```{r}
 #cleaning df column names to have a common variable with games (home_team)
 stadium_data_coordinates <- stadium_data_coordinates %>% 
-  clean_names() %>%
-  rename(Stadium = stadium) %>%
-  rename(Home_Team = home_team) %>%
-  rename(Season = season)
+  clean_names()
 
+# games_w_coordinates = games + stadium_data_coordinates 
 games_w_coordinates <- games %>%
   inner_join(stadium_data_coordinates)
 
+# games_w_coordinates = games + stadium_data_coordinates + visit_team_data  
+games_w_coordinates <- visit_team_data %>%
+  clean_names() %>% 
+  inner_join(games_w_coordinates)  
+
+# clean games_w_coordinates 
 games_w_coordinates <- games_w_coordinates %>%
-  inner_join(visit_team_data)
+  mutate(num = NULL) %>%
+  rename(home_lat = longitude,
+         home_long = latitude) 
+  #distinct(game_key, .keep_all = TRUE)
+```
 
-games_w_coordinates$num <-NULL
-games_w_coordinates$additional_info_location <- NULL
-colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'longitude'] <- 'Home_lat'
-colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'latitude'] <- 'Home_long'
-
-games_w_coordinates <- games_w_coordinates[!duplicated(games_w_coordinates$GameKey), ]
-
-remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
-
+```{r}
+# create domestic games df 
 domestic_games <- games_w_coordinates %>%
-  filter(!grepl(remove.list, Stadium))
-
-domestic_games <- domestic_games[!duplicated(domestic_games$GameKey), ]
-
-international_games <- games_w_coordinates %>%
-  filter(grepl(remove.list, Stadium))
-
-international_games <- international_games[!duplicated(international_games$GameKey), ]
+  filter(
+    stadium != c(
+      'Wembley Stadium',
+      "Rogers Centre",
+      "Wembley",
+      "Twickenham",
+      "Estadio Azteca",
+      "Twickenham Stadium",
+      "Azteca Stadium",
+      "Tottenham Hotspur Stadium",
+      "Tottenham Hotspur"
+    )
+  )
+# create international games df 
+#international_games <- games_w_coordinates %>% 
+#  filter(
+#    stadium == c(
+#      'Wembley Stadium',
+#      "Rogers Centre",
+#      "Wembley",
+#      "Twickenham",
+#      "Estadio Azteca",
+#      "Twickenham Stadium",
+#      "Azteca Stadium",
+#      "Tottenham Hotspur Stadium",
+#      "Tottenham Hotspur"
+#    )
+#  )
 ```
 
 ```{r}
 # calculate distance
-
 calc_domestic <- domestic_games %>% 
   rowwise() %>%
-  mutate(distance_m = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
-  mutate(distance_mile = distance_m*0.6214/1000)
+  mutate(distance_m = distCosine(c(home_long, home_lat),c(visit_long, visit_lat)),
+         distance_mile = distance_m*0.6214/1000)
 
-calc_domestic <- calc_domestic[!duplicated(calc_domestic$GameKey), ]
-
+# categorize distances 
 calc_domestic <- calc_domestic %>%
-  mutate(distance = ifelse(distance_mile > 2000, "very far",
-                           ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close"))) %>%
-  mutate(color_dis = ifelse(distance == "very far", "red",
-                        ifelse(distance == "far", "orange",
-                               "cyan")))
+  mutate(
+    distance =
+      case_when(
+        distance_mile > 2000 ~ "very far",
+        distance_mile > 1000 ~ "far",
+        distance_mile <= 1000 ~ "close"
+      ),
+    color_dis =
+      case_when(
+        distance == "very far" ~ "red",
+        distance == "far" ~ "orange",
+        distance == "close" ~ "cyan"
+      ),
+    is_thurs =
+      ifelse(game_day == "Thursday", 1, 0),
+    stroke =
+      ifelse(is_thurs == '1', "8", "NULL")
+  )
+```
 
-domestic_distance <- calc_domestic %>%
-   group_by(distance) %>%
-   summarise(num =n())
-
+```{r}
+# Determines total distance each team traveled a given year 
 total_dis<-function(year){
   
-sum.distance <- calc_domestic %>%
-  group_by(Visit_Team,Season) %>%
+sum_distance <- calc_domestic %>%
+  group_by(visit_team, season) %>%
   summarise(num =sum(distance_mile)) %>%
-  filter(Season == year)
+  filter(season == year)
 
-  return(sum.distance)
+  return(sum_distance)
 }
 
 # total distance traveld per season
@@ -115,35 +146,34 @@ sum.distance <- calc_domestic %>%
 # distance_2016_sum <- total_dis("2016")
 # distance_2017_sum <- total_dis("2017")
 # distance_2018_sum <- total_dis("2018")
-
 ```
 
 
 ## Getting total distance for each team from 2007-2018
 ```{r}
 sum_distance_season <- calc_domestic %>%
-  group_by(Visit_Team,Season) %>%
+  group_by(visit_team, season) %>%
   summarise(travel_dis =sum(distance_mile))  %>%
-  rename(Team = Visit_Team)
+  rename(team = visit_team)
 
 num_games_season_visit <- calc_domestic %>%
-  group_by(Visit_Team,Season) %>%
+  group_by(visit_team, season) %>%
   summarise(num_game_visit =n()) %>%
-  rename(Team = Visit_Team)
+  rename(team = visit_team)
 
 # function to get sem
 se <- function(x) sqrt(var(x)/length(x))
 
 # get sem
 games_season_sem <- calc_domestic %>%
-  group_by(Visit_Team,Season) %>%
+  group_by(visit_team, season) %>%
   summarise(sem=se(distance_mile)) %>%
-  rename(Team=Visit_Team)
+  rename(team= visit_team)
 
 num_games_season_home <- calc_domestic %>%
-  group_by(Home_Team,Season) %>%
+  group_by(home_team, season) %>%
   summarise(num_game_home =n()) %>%
-  rename(Team = Home_Team)
+  rename(team = home_team)
 
 distance_season <- sum_distance_season %>%
   inner_join(num_games_season_visit) %>%
@@ -154,25 +184,24 @@ distance_season <- sum_distance_season %>%
 
 
 sum_distance_all <- calc_domestic %>%
-  group_by(Visit_Team) %>%
+  group_by(visit_team) %>%
   summarise(travel_dis =sum(distance_mile)) %>%
-  rename(Team = Visit_Team)
+  rename(team = visit_team)
 
 
 num_games_visit <- calc_domestic %>%
-  group_by(Visit_Team) %>%
+  group_by(visit_team) %>%
   summarise(num_game_visit =n()) %>%
-  rename(Team = Visit_Team)
+  rename(team = visit_team)
 
 num_games_home <- calc_domestic %>%
-  group_by(Home_Team) %>%
+  group_by(home_team) %>%
   summarise(num_game_home =n()) %>%
-  rename(Team = Home_Team)
-
+  rename(team = home_team)
 
 # get the standard error mean for travel distance
 all_games_sem <- calc_domestic %>%
-  group_by(Visit_Team) %>%
+  group_by(visit_team) %>%
   summarise(sem = se(distance_mile)) 
 
 
@@ -188,7 +217,7 @@ distance_all <- sum_distance_all %>%
 
 ```{r}
 # making the plot 
-ggplot(distance_all, aes(x=Team, y=avg_travel)) +
+ggplot(distance_all, aes(x=team, y=avg_travel)) +
   geom_bar(stat="identity") + 
   coord_flip() + 
   labs(y = "Average Travel Distance from 2007 to 2018 (miles)")
@@ -198,13 +227,12 @@ ggplot(distance_all, aes(x=Team, y=avg_travel)) +
 ```{r}
 # facet wrap by season
 # making the plot --> need a way to look at the each team names
-ggplot(distance_season, aes(x=Team, y=avg_travel)) +
+ggplot(distance_season, aes(x=team, y=avg_travel)) +
   geom_bar(stat="identity") + 
   coord_flip() + 
   labs(y = "Average Travel Distance from 2007 to 2018 (miles)") +
-  facet_wrap(vars(Season))
+  facet_wrap(vars(season))
 ```
-
 
 
 ```{r}
@@ -229,99 +257,67 @@ ggplot(distance_season, aes(x=Team, y=avg_travel)) +
 
 
 ```{r}
-
-mapping_travel <-function(season,visit_team){
-
-  season_data <- calc_domestic %>%
-  filter(Season== season)
+#WITHOUT ELO RANKINGS
+mapping_travel <- function(Season, Team) {
+  mapping_team <- calc_domestic %>%
+    filter(season == Season,
+           visit_team == Team) 
+   
+  travel_map <- mapping_team %>%
+    leaflet() %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    setView(-93.65, 42.0285, zoom = 4.3) %>%
+    addMarkers( ~ visit_long, ~ visit_lat) %>%
+    addMarkers( ~ home_long, ~ home_lat) %>%
+    addMarkers(
+      lng = mapping_team$visit_long,
+      lat = mapping_team$visit_lat,
+      label = mapping_team$visit_team,
+      labelOptions = labelOptions(noHide = T))
   
-mapping_team <-season_data %>%
-  filter(Visit_Team == visit_team)
-
-travel_map <- mapping_team %>% 
-  leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  setView(-93.65, 42.0285, zoom = 4.3) %>%
-  addMarkers(~Visit_long, ~Visit_lat) %>%
-  addMarkers(~Home_long, ~Home_lat) %>%
-  addMarkers(
-    lng = mapping_team$Visit_long, 
-    lat = mapping_team$Visit_lat,
-    label = mapping_team$Visit_Team,
-    labelOptions = labelOptions(noHide = T))
-
-for (i in 1:nrow(mapping_team)){
+  for (i in 1:nrow(mapping_team)) {
+    travel_map <- travel_map %>%
+      addPolylines(
+        lat = c(mapping_team[i, ]$visit_lat,
+                mapping_team[i, ]$home_lat),
+        lng = c(mapping_team[i, ]$visit_long,
+                mapping_team[i, ]$home_long),
+        color = mapping_team[i, ]$color_dis,
+        dashArray = mapping_team[i,]$stroke
+      ) %>%
+      addMarkers(
+        lng = mapping_team[i, ]$home_long,
+        lat = mapping_team[i, ]$home_lat,
+        label = mapping_team[i, ]$home_team,
+        labelOptions = labelOptions(noHide = T)
+      )
+      # addMarkers(
+      #   lng = mapping_team[i, ]$home_long,
+      #   lat = mapping_team[i, ]$home_lat,
+      #   popup = paste(
+      #     mapping_team[i, ]$home_team,
+      #     "<br>",
+      #     mapping_team[i, ]$visit_team,
+      #     "Ranking:",
+      #     #round(mapping_team[i, ]$elo2_pre, digits = 0),
+      #     #"<br>",
+      #     #mapping_team[i, ]$home_team,
+      #     #"Ranking:",
+      #     #round(mapping_team[i, ]$elo1_pre, digits = 0),
+      #     #"<br>"
+      #   ),
+      #   options = popupOptions(closeButton = TRUE)
+      # )
+  }
   
-travel_map <- travel_map %>%
-  addPolylines(lat=c(mapping_team[i,]$Visit_lat,
-                     mapping_team[i,]$Home_lat),
-               lng=c(mapping_team[i,]$Visit_long,
-                     mapping_team[i,]$Home_long),
-              color = mapping_team[i,]$color_dis) %>%
-  addMarkers(
-    lng = mapping_team[i,]$Home_long,
-    lat = mapping_team[i,]$Home_lat,
-    label = mapping_team[i,]$Home_Team,
-    labelOptions = labelOptions(noHide = T))
+  return(travel_map)
+  
 }
 
-return(travel_map)
-
-}
-
-mapping_travel("2016","Los Angeles Rams")
+mapping_travel("2016", "Los Angeles Rams")
 
 ```
 
-```{r}
-# Is the game on thursday?
-
-thusday_travel <- fulldata_with_thurs %>% 
-    left_join(calc_domestic) %>%
-  mutate(color_thurs = ifelse(is_thurs == '1', "red","blue"))
-
-mapping_thursday <-function(season,visit_team){
-
-  season_thurs_data <- thusday_travel %>% 
-  filter(Season == season)
-  
-mapping_team_thurs <-season_thurs_data %>%
-  filter(Visit_Team == visit_team)
-
-travel_thurs_map <- mapping_team_thurs %>% 
-  leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  setView(-93.65, 42.0285, zoom = 4.3) %>%
-  addMarkers(~Visit_long, ~Visit_lat) %>%
-  addMarkers(~Home_long, ~Home_lat) %>%
-  addMarkers(
-    lng = mapping_team_thurs$Visit_long, 
-    lat = mapping_team_thurs$Visit_lat,
-    label = mapping_team_thurs$Visit_Team,
-    labelOptions = labelOptions(noHide = T))
-
-for (i in 1:nrow(mapping_team_thurs)){
-  
-travel_thurs_map <- travel_thurs_map %>%
-  addPolylines(lat=c(mapping_team_thurs[i,]$Visit_lat,
-                     mapping_team_thurs[i,]$Home_lat),
-               lng=c(mapping_team_thurs[i,]$Visit_long,
-                     mapping_team_thurs[i,]$Home_long),
-              color = mapping_team_thurs[i,]$color_thurs) %>%
-  addMarkers(
-    lng = mapping_team_thurs[i,]$Home_long,
-    lat = mapping_team_thurs[i,]$Home_lat,
-    label = mapping_team_thurs[i,]$Home_Team,
-    labelOptions = labelOptions(noHide = T))
-}
-
-return(travel_thurs_map)
-
-}
-
-mapping_thursday("2016","Los Angeles Rams")
-
-```
 
 ```{r}
 # run a permutation test
@@ -350,4 +346,96 @@ choose(34,12)
 # regrouping = 548354040
 ```
 
+### Adding Elo Rankings to Map 
+
+```{r}
+#cleaning data used in function including dataframe full_with_elo
+full_with_elo <- full_with_elo %>%
+  clean_names()
+
+#joining datafram with distances and dataframe with elo rankings
+full_with_distances <- full_with_elo %>%
+  left_join(calc_domestic, by = "game_key")
+
+#selecting necessary varaibles for calculations and rankings
+full_with_distances <- full_with_distances %>%
+  rename(visit_team = visit_team.x,
+         home_team = home_team.x,
+         season = season.x) %>%
+  select(
+    game_key,
+    season,
+    visit_long,
+    visit_lat,
+    home_long,
+    home_lat,
+    visit_team,
+    home_team,
+    color_dis,
+    elo1_pre,
+    elo2_pre
+  ) %>%
+  distinct(game_key, .keep_all = TRUE)
+
+#note: NAs for 2007-2010 in pbp
+```
+
+```{r}
+mapping_travel <- function(Season, Team) {
+  #obtain all of visiting team's travel games in a given season 
+  mapping_team <- full_with_distances %>%
+    filter(season == Season,
+           visit_team == Team)
+  
+  #create leaflet map 
+  travel_map <- mapping_team %>%
+    leaflet() %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    setView(-93.65, 42.0285, zoom = 4.3) %>%
+    addMarkers( ~ visit_long, ~ visit_lat) %>%
+    addMarkers( ~ home_long, ~ home_lat) %>%
+    addMarkers(
+      lng = mapping_team$visit_long,
+      lat = mapping_team$visit_lat,
+      label = mapping_team$visit_team,
+      labelOptions = labelOptions(noHide = T)
+    )
+  
+  for (i in 1:nrow(mapping_team)) {
+    travel_map <- travel_map %>%
+      addPolylines(
+        lat = c(mapping_team[i, ]$visit_lat,
+                mapping_team[i, ]$home_lat),
+        lng = c(mapping_team[i, ]$visit_long,
+                mapping_team[i, ]$home_long),
+        color = mapping_team[i, ]$color_dis,
+        dashArray = mapping_team[i,]$stroke
+      ) %>%
+      addTiles() %>%
+      addMarkers(
+        lng = mapping_team[i, ]$home_long,
+        lat = mapping_team[i, ]$home_lat,
+        popup = paste(
+          mapping_team[i, ]$home_team,
+          "<br>",
+          mapping_team[i, ]$visit_team,
+          "Ranking:",
+          round(mapping_team[i, ]$elo2_pre, digits = 0),
+          "<br>",
+          mapping_team[i, ]$home_team,
+          "Ranking:",
+          round(mapping_team[i, ]$elo1_pre, digits = 0),
+          "<br>"
+        ),
+        options = popupOptions(closeButton = TRUE)
+      )
+    travel_map
+  }
+  
+  return(travel_map)
+  
+}
+
+mapping_travel("2019", "New Orleans Saints")
+```
 

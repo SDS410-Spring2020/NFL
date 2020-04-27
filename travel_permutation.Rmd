@@ -222,12 +222,6 @@ ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
-# unit of travel distance in miles --> white it on the plot 
-# add title 
-
-# look at the last score equal, final margin of victory (home score vs visitor score (true or false for win) and margin will be the difference) 
-
-# quantitative variables: 
 ```
 
 ```{r}

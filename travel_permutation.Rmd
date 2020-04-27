@@ -207,7 +207,7 @@ null_distance %>%
 
 # the p-value is 0.094, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
 
-# --> not statistically significant difference between the two 
+# --> no statistically significant difference between the two 
 
 
 ```

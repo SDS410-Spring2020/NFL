@@ -116,5 +116,15 @@ full_with_elo= merge(nfl_elo,
 #Stadium_data
 
 #Stadium_data_coordinates
+stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv") %>%
+  rename(home_team = Home_Team) %>%
+  rename(stadium = Stadium) %>%
+  rename(season = Season)
 
 #Visit_team_data 
+visit_team_data <- read.csv("visit_team_data.csv") %>%
+  rename(visit_team = Visit_Team) %>%
+  rename(visit_stadium = Visit_Stadium) %>%
+  rename(season = Season) %>%
+  rename(visit_lat = Visit_lat) %>%
+  rename(visit_long = Visit_long)

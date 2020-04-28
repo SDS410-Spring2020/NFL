@@ -198,7 +198,7 @@ null_distance <- distance_all %>%
   generate(reps = 5000, type = "permute") %>%
   calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
 
-null_distance
+
 
 null_distance %>% 
   get_pvalue(obs_stat = diff_distance, direction = "both")
@@ -207,8 +207,6 @@ null_distance %>%
 # the p-value is 0.094, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
 
 # --> no statistically significant difference between the two 
-
-
 ```
 
 ```{r,message=FALSE}
@@ -218,11 +216,6 @@ ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   labs(x = "Average travel distance from 2007 to 2018", y = NULL) +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
-
-# unit of travel distance in miles --> white it on the plot 
-# add title 
-
-# look at the last score equal, final margin of victory (home score vs visitor score (true or false for win) and margin will be the difference) 
 ```
 
 ```{r}

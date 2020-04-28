@@ -7,16 +7,12 @@ pbp <- read.csv("data/pbp_Smith.csv") %>%
   clean_names()
 
 data <- games %>% 
-  inner_join(pbp, by="game_key") %>% 
-  filter(game_day == "Thursday"| game_day == "Sunday")
+  inner_join(pbp, by="game_key")
 
 data_thurs <- games %>% 
   inner_join(pbp, by="game_key") %>% 
   filter(game_day == "Thursday")
 
-data_sun <- games %>% 
-  inner_join(pbp, by="game_key") %>% 
-  filter(game_day == "Sunday")
 
 #### Using Tom's code 
 
@@ -61,7 +57,7 @@ ggplot(data = epa_df, aes(x = epa)) +
 #plot epa on thurs vs sunday - density
 ### USE THIS ONE
 ggplot(data = epa_df, aes(x = epa)) +
-  geom_density(kernel = "rectangular", bw = "nrd0", aes(color = is_thurs, fill = is_thurs), color = "black") +
+  geom_density(kernal = "rectangular", aes(color = is_thurs), size = 1.5) +
   ggtitle("Distribution of EPA", subtitle = "Comparing Thursday to Non Thursday Games") +
   coord_cartesian(xlim = c(-8, 8), ylim = c(0, 0.55)) +
   theme_minimal()
@@ -115,7 +111,7 @@ for (i in 1:1000){
 }
 
 sum(distribution >= original_ts)/length(distribution)
-#note: p = 0.947, which is not less than alpha = 0.1
+#note: p = 0.935, which is not less than alpha = 0.1
 
 ### Plots of permutation test results
 ###USE THIS ONE
@@ -179,7 +175,8 @@ bootstrap_plot
 #plot by team
 epa_team_df <-  data %>% 
   filter(home_team == "Buffalo Bills" | home_team == "Miami Dolphins" |
-           home_team == "New England Patriots" | home_team == "New York Jets") %>% 
+           home_team == "New England Patriots" | home_team == "New York Jets" | home_team == "Kansas City Cheifs"
+         | home_team == "Denver Broncos" | home_team == "Oakland Raiders") %>% 
   mutate(quarter = as.numeric(quarter)) %>% 
   mutate(half = ifelse(quarter < 3, 1, ifelse(quarter == 5, 3, 2))) %>%
   mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
@@ -219,7 +216,7 @@ epa_team_df <-  data %>%
 team_plot <- ggplot(data = epa_team_df, aes(x = home_team, y = mean_epa, fill = is_thurs)) +
   geom_bar(stat = "identity", position = "dodge") +
   theme(axis.text.x = element_text(angle=90)) +
-  ggtitle(label = "Mean expected points averaged in the AFC East", subtitle = " Comparing  Thursday  vs. Non Thursday games") +
+  ggtitle(label = "Mean EPA in the AFC East & West", subtitle = " Comparing  Thursday  vs. Non Thursday games") +
   labs(fill = "Thursday Status", y = "Mean EPA", x = "Home Team")
 team_plot
 

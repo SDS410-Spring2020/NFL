@@ -154,9 +154,6 @@ num_games_home <- calc_domestic %>%
   summarise(num_game_home =n()) %>%
   rename(Team = Home_Team) 
 
-
-
-
 # get the standard error mean for travel distance
 all_games_sem <- calc_domestic %>%
   group_by(Visit_Team,is_thurs) %>%

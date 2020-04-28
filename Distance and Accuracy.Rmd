@@ -10,10 +10,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 
 library(geosphere)
-library(dplyr)
 library(sp)
 library(leaflet)
 library(magrittr)
+library(infer)
 
 ```
 
@@ -28,79 +28,12 @@ visit_team_data <- read.csv("visit_team_data.csv")
 #Join DF's
 ```{r}
 data<-games %>% 
-  left_join(pbp, by="GameKey")
-#Clean strings
-data <- data %>% 
-  #might want to look at this in terms of game excitement
-  filter(Game_Day=="Sunday" | Game_Day=="Thursday") %>% 
-  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
-
-data$PlayDescription<-str_to_lower(data$PlayDescription)
-
-
-plays<-data %>% 
-  mutate(pass=ifelse(str_detect(PlayDescription, "pass"), 1,0), 
-         pass_incm=ifelse(str_detect(PlayDescription,"pass incomplete"),1,0),
-         short=ifelse(str_detect(PlayDescription,"short"),1,0),
-         short_l=ifelse(str_detect(PlayDescription,"pass short left"),1,0),
-         short_r=ifelse(str_detect(PlayDescription,"short right"),1,0), 
-         deep=ifelse(str_detect(PlayDescription,"deep"),1,0), 
-         deep_r=ifelse(str_detect(PlayDescription,"deep right"),1,0),
-         deep_l=ifelse(str_detect(PlayDescription,"deep left"),1,0),
-         penalty=ifelse(str_detect(PlayDescription,"penalty"),1,0),
-         tackle=ifelse(str_detect(PlayDescription,"tackle"),1,0),
-         punts=ifelse(str_detect(PlayDescription,"punts"),1,0),
-         fumbles=ifelse(str_detect(PlayDescription,"fumbles"),1,0),
-         false_start=ifelse(str_detect(PlayDescription,"false start"),1,0), 
-         sacked=ifelse(str_detect(PlayDescription,"sacked"),1,0),
-         interception=ifelse(str_detect(PlayDescription,"interception"),1,0),
-         kick=ifelse(str_detect(PlayDescription,"kick"),1,0), 
-         recover=ifelse(str_detect(PlayDescription,"recover"),1,0), 
-         no_gain=ifelse(str_detect(PlayDescription,"no gain"),1,0),
-         roughing= ifelse(str_detect(PlayDescription,"rough"), 1, 0), 
-         run = ifelse(PlayResult>0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
-         bad_run = ifelse(PlayResult<0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
-         bad_tackle = ifelse(PlayResult<0 & (str_detect(PlayDescription, "tackle") | str_detect(PlayDescription, "tackles")), 1, 0),
-         possesion = ifelse(as.character(PossessionTeam)==as.character(HomeClubCode),1,0),
-         defense = ifelse((PlayResult<=0),1,0), 
-         defensive = ifelse((possesion==0), 1, 0))
-
-
-passes<-plays %>% 
-  group_by(GameKey,PossessionTeam, Season, Home_Team, Visit_Team, is_thurs) %>% 
-  summarize(total_short =sum(short),
-            total_short_l = sum(short_l), 
-            total_shortr= sum(short_r), 
-            total_deep =sum(deep), 
-            total_deepr =sum(deep_r), 
-            total_deepl= sum(deep_l), 
-            total_incm= sum(pass_incm), 
-            total_passes = sum(pass), 
-            total_rough = sum(roughing), 
-            total_interc = sum(interception), 
-            total_fumble =sum(fumbles), 
-            total_run = sum(run), 
-            total_btackle=sum(bad_tackle), 
-            total_badrun=sum(bad_run)) %>% 
-  mutate(pass_accuracy1-((total_incm+total_interc+total_fumble)
-                         /total_passes), 
-         total_runrun = total_run+total_btackle+total_badrun,
-         bad_runs = total_badrun +total_btackle, 
-         run_accuracy = 1-(bad_runs/total_runrun))
-#try abnd pip by gameid and filtered for thurs 
-#then filtered by non-thurs 
-#Create different 
+  right_join(pbp, by="GameKey")
+games_w_coordinates <-stadium_data_coordinates %>%
+  inner_join(visit_team_data)
 ```
 
-
-
 ```{r}
-games_w_coordinates <- passes %>%
-  inner_join(stadium_data_coordinates)
-
-games_w_coordinates <- games_w_coordinates %>%
-  inner_join(visit_team_data)
-
 #Create Null Observations
 games_w_coordinates$num <-NULL
 games_w_coordinates$additional_info_location <- NULL
@@ -108,63 +41,161 @@ colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'longitude'] <- '
 colnames(games_w_coordinates)[colnames(games_w_coordinates) == 'latitude'] <- 'Home_long'
 ```
 
+```{r}
+#Counting different types of plays per game 
+
+data$PlayDescription<-str_to_lower(data$PlayDescription)
+data<-data %>% 
+  mutate(pass_incm=ifelse(str_detect(PlayDescription, "pass incomplete"), 1,0),
+         pass=ifelse(str_detect(PlayDescription, "pass"), 1,0),
+         tackle=ifelse(str_detect(PlayDescription,"tackle"),1,0),
+         fumbles=ifelse(str_detect(PlayDescription,"fumbles"),1,0),
+         false_start=ifelse(str_detect(PlayDescription,"false start"),1,0), 
+         sacked=ifelse(str_detect(PlayDescription,"sacked"),1,0),
+         interception=ifelse(str_detect(PlayDescription,"interception"),1,0),
+         roughing= ifelse(str_detect(PlayDescription,"rough"), 1, 0), 
+         run = ifelse(PlayResult>0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
+         bad_run = ifelse(PlayResult<0 & !(str_detect(PlayDescription, "pass") | str_detect(PlayDescription, "kick") | str_detect(PlayDescription, "punts")), 1, 0 ),
+         bad_tackle = ifelse(PlayResult<0 & (str_detect(PlayDescription, "tackle") | str_detect(PlayDescription, "tackles")), 1, 0)
+        # possesion = ifelse(as.character(PossessionTeam)==as.character(HomeClubCode),1,0)
+         #defense = ifelse((PlayResult<=0),1,0), 
+         #defensive = ifelse((possesion==0), 1, 0)
+        )
+
+
+data<-data %>% 
+  group_by(PossessionTeam,GameKey, Season) %>% 
+  summarize(total_incm= sum(pass_incm), 
+            total_passes = sum(pass),
+            total_interc = sum(interception), 
+            total_fumble =sum(fumbles), 
+            total_run = sum(run), 
+            total_btackle=sum(bad_tackle), 
+            total_badrun=sum(bad_run)
+            ) %>% 
+  mutate(pass_accuracy = 1-((total_incm+total_interc+total_fumble)/total_passes), 
+         total_runrun = total_run+total_btackle+total_badrun,
+         bad_runs = total_badrun +total_btackle, 
+         run_accuracy = 1-(bad_runs/total_runrun))
+```
+
 
 ```{r}
-# calculate distance
-
-new_data<-games_w_coordinates%>% 
+games_w_coordinates<-games_w_coordinates%>% 
   rowwise() %>%
   mutate(distance_km = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat)))%>%
   mutate(distance_mile = distance_km*0.6214/1000)
 
-#calc <- calc[!duplicated(calc$GameKey), ]
-
-new_data1 <- new_data %>%
+games_w_coordinates <-games_w_coordinates%>%
   mutate(distance = ifelse(distance_mile > 2000, "very far",
                            ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close")))
 
-off_data<-new_data1 %>% 
-  group_by(GameKey) %>% 
-  mutate(median_pass_acc=median(pass_accuracy))
+prelim<-games %>% 
+  left_join(games_w_coordinates, by = c("Home_Team", "Visit_Team", "Season", "Stadium"))
+
+full_data<-prelim %>% 
+  left_join(data, by = "GameKey")
+
+full_data<-full_data %>% 
+  mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0))
+
+thursday_games<-full_data %>% 
+  filter(is_thurs ==1)
+
+nonthurs_games<-full_data %>% 
+  filter(is_thurs ==0)
+```
+
+#Exploratory Data Analysis
+```{r}
+
+attach(full_data)
+par(mfrow=c(1,1))
+summary(pass_accuracy)
+sd(pass_accuracy)
+summary(is_thurs)
+sd(is_thurs)
+summary(run_accuracy)
+sd(run_accuracy)
 
 ```
 
 
-# Model building
-
-1) Exploratory Data Analysis
 
 ```{r}
-library(ggplot2)
+#Histograms
 
-ggplot(off_data, aes(median_pass_acc))+
+ggplot(full_data, aes(pass_accuracy))+
   geom_histogram()
 
-ggplot(new_data1, aes(run_accuracy))+
+ggplot(full_data, aes(run_accuracy))+
   geom_histogram()
 
-ggplot(new_data1, aes(distance_mile))+
+ggplot(thursday_games, aes(pass_accuracy))+
   geom_histogram()
 
-ggplot(new_data1, aes(distance_km))+
+ggplot(thursday_games, aes(run_accuracy))+
   geom_histogram()
 
-ggplot(new_data1, aes(as.factor(distance)))+
-  geom_histogram(stat="count")
+ggplot(nonthurs_games, aes(pass_accuracy))+
+  geom_histogram()
+
+ggplot(nonthurs_games, aes(run_accuracy))+
+  geom_histogram()
+```
+
+#Boxplots
+
+```{r}
+
+ggplot(full_data,aes(as.factor(is_thurs),pass_accuracy))+
+  geom_boxplot()+
+  labs(title = "Pass Accuracy by Thursday and Non-Thursday games")
+
+ggplot(full_data,aes(as.factor(is_thurs),run_accuracy))+
+  geom_boxplot()+
+  labs(title = "Run Accuracy by Thursday and Non-Thursday games")
+
+ggplot(full_data,aes(as.factor(distance),pass_accuracy))+
+  geom_boxplot()+
+  labs(title = "Pass Accuracy by Distance")
+
+ggplot(full_data,aes(as.factor(distance),run_accuracy))+
+  geom_boxplot()+
+  labs(title = "Run Accuracy by Distance")
+
+
+
 ```
 
 ```{r}
+# function to get sem
+se <- function(x) (sd(x)/sqrt(length(x)))
+#Cleaning Datasets 
+# create a dataset which summarised the total travel distance on Thursday or not Thursday 
 
-m1<-lm(median_pass_acc~distance_mile, off_data)
-summary(m1)
-
-m2<-lm(run_accuracy~distance_mile +distance +distance*distance_mile, new_data1)
-summary(m2)
-
-attach(new_data1)
-cor.test(run_accuracy, distance_mile)
-cor.test(pass_accuracy, distance_mile)
-5t```
+stats_team_season <- full_data%>%
+  group_by(PossessionTeam, Season.x,is_thurs) %>%
+  summarise(num_game=n(),
+            sem=se(pass_accuracy),
+            avg_pass_accuracy = mean(pass_accuracy)) %>% 
+  filter(Season.x>=2010)
+```
 
 
+```{r}
+# get the standard error mean for accuracy 
+all_games_sem <- full_data %>%
+  group_by(PossessionTeam,is_thurs) %>%
+  summarise(sem = se(pass_accuracy)) 
 
+stats_team_season$sem[is.na(stats_team_season$sem)] <- 0
+```
+
+#Permutations
+```{r}
+stats_team_season %>% 
+  mutate(is_thurs = as.factor(is_thurs)) %>% 
+  specify(avg_pass_accuracy ~ is_thurs) %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+```

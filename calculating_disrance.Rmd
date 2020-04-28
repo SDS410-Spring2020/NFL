@@ -27,7 +27,7 @@ Before knit this document, run code in dataframes.R
 
 ```{r, include=FALSE}
 # importing data
-#games<-read.csv("data/games_Smith.csv")
+games<-read.csv("data/games_Smith.csv")
 #pbp<-read.csv("data/pbp_Smith.csv")
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
 visit_team_data <- read.csv("visit_team_data.csv")
@@ -381,45 +381,6 @@ full_with_distances <- full_with_distances %>%
 #note: NAs for 2007-2010 in pbp
 ```
 
-
-### Winning Probability Function 
-
-
-Pr(A) = 1 / 10 * (-Elo Difference / 400) + 1
-
-
-```{r}
-win_prob <- function(Season, Team) { 
-  
-  #obtain data
-  elo_rankings <- full_with_distances %>%
-    filter(season == Season, 
-           visit_team == Team) %>% 
-    mutate(elo_diff = abs(elo1_pre - elo2_pre), 
-           home_wp = 1/ (10 * (elo_diff/400) + 1)) %>% 
-    select(season,
-           home_team,
-           visit_team,
-           elo1_pre,
-           elo2_pre,
-           home_wp,
-           elo_prob1,
-           elo_prob2)
-  
-  return(elo_rankings)
-}
-
-win_prob("2019", "Seattle Seahawks")
-```
-
-
-### Victory Margin 
-
-```{r} 
-d
-```
-
-
 ```{r}
 mapping_travel <- function(Season, Team) {
   #obtain all of visiting team's travel games in a given season 
@@ -479,5 +440,31 @@ mapping_travel <- function(Season, Team) {
 mapping_travel("2019", "New Orleans Saints")
 ```
 
+### Winning Probability Function 
 
+Pr(A) = 1 / 10 * (-Elo Difference / 400) + 1
+
+```{r}
+win_prob <- function(Season, Team) { 
+  
+  #obtain data
+  elo_rankings <- full_with_distances %>%
+    filter(season == Season, 
+           visit_team == Team) %>% 
+    mutate(elo_diff = abs(elo1_pre - elo2_pre), 
+           home_wp = 1/ (10 * (elo_diff/400) + 1)) %>% 
+    select(season,
+           home_team,
+           visit_team,
+           elo1_pre,
+           elo2_pre,
+           home_wp,
+           elo_prob1,
+           elo_prob2)
+  
+  return(elo_rankings)
+}
+
+win_prob("2019", "Seattle Seahawks")
+```
 

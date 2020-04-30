@@ -110,8 +110,9 @@ for (i in 1:1000){
   
 }
 
-sum(distribution >= original_ts)/length(distribution)
+sum(distribution <= original_ts)/length(distribution)
 #note: p = 0.935, which is not less than alpha = 0.1
+#or 0.065 depending on how you look at it
 
 ### Plots of permutation test results
 ###USE THIS ONE

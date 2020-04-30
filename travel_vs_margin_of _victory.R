@@ -213,40 +213,40 @@ mv_cat_distance_all <- mv_cat_distance_all %>%
 # obtaining the test stats
 diff_cat_distance <- mv_cat_distance_all %>% 
   specify(avg_visit_mv ~ distance) %>% 
-  calculate(stat = "mean", order = c("close", "far","very far"))
+  calculate(stat = "F")
 
 diff_cat_distance
-
+# 0.258
 
 # generate samples 
 null_mv_travel <- mv_cat_distance_all %>%
   specify(avg_visit_mv ~ distance) %>%
   hypothesize(null = "independence") %>%
   generate(reps = 5000, type = "permute") %>%
-  calculate("diff in means", order = c("close", "far","very far"))
+  calculate("F")
 
 null_mv_travel
 
 null_mv_travel %>% 
-  get_pvalue(obs_stat = diff_distance, direction = "both")
+  get_pvalue(obs_stat = diff_cat_distance, direction = "both")
+# 0.457
 
+# the p-value is 0.457, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
 
-# the p-value is 0.094, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
-
-ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
+ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
-  scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
-  labs(x = "Average travel distance from 2007 to 2018 (miles)", y = NULL,title="Comparison of Average Travel Distance") +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9","#999999"), guide = FALSE) +
+  labs(x = "Average Margin of Victory from 2010 to 2019", y = NULL,title="Comparison of Average Margin of Victory for Visiting Teams") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 
 
 null_mv_travel %>% 
   visualise() +
-  shade_p_value(obs_stat = diff_distance,direction = "both") + 
-  labs(x = "Difference in mean travel distance\n(Not Thursday games − Thursday games)",
+  shade_p_value(obs_stat = diff_cat_distance, direction = "right") + 
+  labs(x = "Differences in Mean Margin of Victory between Three different Travel Distances",
        y = "Count",
-       subtitle = "Red line shows observed difference in mean travel distances") +
+       subtitle = "Red line shows observed variatio of margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
 

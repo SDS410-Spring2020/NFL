@@ -1,0 +1,302 @@
+---
+title: "Final Scores"
+author: "Lizette Carpenter"
+date: "4/27/2020"
+output:
+  html_document: 
+      toc: true
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+```
+
+
+This RMarkdown includes a function that outputs the final score and margin of victory for all the games of a given team in a given season. 
+
+1. Part 1 includes the data wrangling that creates the dataframe used in this function. 
+1. Part 2 compares the scores in the newly created dataframe with the score in FiveThirtyEight Elo Ranking dataframe. 
+1. Part 3 includes the functions that outputs final scores and margin of victory. 
+
+# Loading Libraries and Data 
+
+```{r}
+library(janitor)
+library(lubridate)
+library(dplyr)
+library(tidyverse)
+```
+
+Before calculating the final scores, the following data frames are cleaned: 
+
+```{r}
+#games
+games <-read.csv("data/games_Smith.csv") %>% 
+  clean_names() %>%
+  mutate(game_date = str_replace(game_date, "T00:00:00Z", ""),
+         game_date = as.Date(game_date, "%Y-%m-%d")) 
+```
+
+```{r}
+#pbp
+pbp<-read.csv("data/pbp_Smith.csv") %>% 
+  clean_names() %>% 
+  mutate(
+    game_clock = as.numeric(as.period(ms(game_clock), unit = "sec")),
+    game_clock = 
+      case_when(quarter == 1 ~ game_clock,
+                quarter == 2 ~ game_clock + 900,
+                quarter == 3 ~ game_clock + 1800,
+                quarter == 4 ~ game_clock + 2700,
+                quarter == 5 ~ game_clock + 3600))
+```
+
+```{r}
+#data (combined)
+data <- games %>% 
+  left_join(pbp, by="game_key")
+```
+
+```{r}
+#fulldata
+fulldata <- data %>% 
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  filter(game_day == "Thursday" | game_day == "Sunday") %>% 
+  mutate(is_thurs = as.factor(is_thurs),
+         stadium = as.character(stadium),
+         home_team = as.character(home_team),
+         visit_team = as.character(visit_team),
+         location = as.character(location),
+         game_key = as.factor(game_key), 
+         season = as.factor(season),
+         week = as.factor(week),
+         game_weather = as.character(game_weather),
+         wind_speed = as.character(wind_speed),
+         wind_direction = as.character(wind_direction),
+         quarter = as.factor(quarter),
+         play_description = as.character(play_description),
+         down = as.factor(down),
+         is_scoring_play = as.factor(is_scoring_play))
+```
+
+```{r}
+nfl_elo <- read.csv("nfl_elo.csv") %>% 
+  clean_names() %>% 
+  rename(
+    home_club_code = team1, 
+    visitor_club_code = team2) %>% 
+  mutate(
+    game_date = as.Date(date, "%Y-%m-%d"), 
+    date = NULL, 
+    home_club_code = 
+      case_when(
+        as.character(home_club_code) == "HOU" ~ "HST",
+        as.character(home_club_code) == "LAR" ~ "SL",
+        as.character(home_club_code) == "WSH" ~ "WAS", 
+        as.character(home_club_code) == "CLE" ~ "CLV",
+        as.character(home_club_code) == "BAL" ~ "BLT",
+        as.character(home_club_code) == "ARI" ~ "ARZ",
+        as.character(home_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(home_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(home_club_code)), 
+    visitor_club_code = 
+      case_when(
+        as.character(visitor_club_code) == "HOU" ~ "HST",
+        as.character(visitor_club_code) == "LAR" ~ "SL",
+        as.character(visitor_club_code) == "WSH" ~ "WAS", 
+        as.character(visitor_club_code) == "CLE" ~ "CLV",
+        as.character(visitor_club_code) == "BAL" ~ "BLT",
+        as.character(visitor_club_code) == "ARI" ~ "ARZ",
+        as.character(visitor_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(visitor_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(visitor_club_code)))
+```
+
+# Part 1 
+
+```{r}
+#full data with final scores 
+data_with_scores <- fulldata %>% 
+  group_by(game_key, 
+           home_club_code, 
+           visitor_club_code) %>% 
+  #Mutates home/visitor_score_after_play. The values of these variables will only show the 
+  #team's score if the play is a scoring play. Otherwise, the value will be 0.  
+  mutate( 
+    home_score_after_play = 
+      case_when(
+        is_scoring_play == 0 ~ 0,
+        TRUE ~ as.double(home_score_after_play)),
+    visitor_score_after_play = 
+      case_when(
+        is_scoring_play == 0 ~ 0, 
+        TRUE ~ as.double(visitor_score_after_play))) %>% 
+  #Filters out home/visitor_score_after_play with values that have 0.
+  filter(!home_score_after_play == 0,
+         !visitor_score_after_play == 0) %>%
+  group_by(game_key) %>%
+  mutate(home_final = max(home_score_after_play),
+         visitor_final = max(visitor_score_after_play),
+         winning_team = 
+           case_when(
+             home_final > visitor_final ~ as.character(home_club_code), 
+             home_final < visitor_final ~ as.character(visitor_club_code),
+             home_final == visitor_final ~ "tie"), 
+         is_tie = ifelse(winning_team == "tie", 1, 0))
+```
+
+# Part 2 
+
+This section is left commented out because it is not necessary to run part 3. The results of this code tells us that FiveThirtyEight and NFL data have the same data for final scores. 
+```{r}
+# nfl_elo_2019 <- nfl_elo %>% 
+#   filter(season == "2019") 
+# 
+# nfl_fs <- data_with_scores %>% 
+#   select(game_key, game_date, season, home_club_code, visitor_club_code, is_scoring_play, home_score_after_play, visitor_score_after_play, home_final, visitor_final, winning_team, is_tie) %>%
+#   distinct(game_key, .keep_all = TRUE)
+# 
+# comparisons <- inner_join(nfl_fs, nfl_elo_2019, by = NULL, copy = FALSE) 
+# #full_with_elo 
+# comparisons= merge(nfl_elo_2019, 
+#                    nfl_fs, 
+#                    by.x= c("home_club_code", "visitor_club_code", "game_date", "season"), 
+#                    by.y= c("home_club_code", "visitor_club_code", "game_date", "season"))
+# 
+# comparisons <- comparisons %>% 
+#   select(game_date, season, home_club_code, visitor_club_code, home_final, visitor_final, score1, score2)
+# 
+# for (i in 1:nrow(comparisons)) {
+#   home_team <- comparisons[i,]$home_club_code
+#   vis_team <- comparisons[i,]$visitor_club_code
+#   home_elo_score <- comparisons[i,]$score1
+#   home_nfl_score <- comparisons[i,]$home_final
+#   vis_elo_score <- comparisons[i,]$score2
+#   vis_nfl_score <- comparisons[i,]$visitor_final
+#   if (home_elo_score == home_nfl_score) {
+#     home <- "yes"
+#   } else {
+#     home <- "no"
+#   }
+#   if (vis_elo_score == vis_nfl_score) {
+#     vis <- "yes"
+#   } else {
+#     vis <- "no"
+#   }
+#   results <- c(home_team, vis_team, home, vis)
+#   print(results)
+# }
+```
+
+# Part 3 (Final Scores and Margin of Victory)
+
+```{r}
+final_score <- function(Season, Team) {
+  record <- data_with_scores %>%
+    filter(season == Season,
+           (home_club_code == Team) |
+             (visitor_club_code == Team)) %>%
+    select(
+      season,
+      game_key,
+      game_date,
+      week, 
+      game_day,
+      game_clock,
+      home_club_code,
+      visitor_club_code,
+      is_scoring_play,
+      home_score_after_play,
+      visitor_score_after_play,
+      home_final,
+      visitor_final,
+      winning_team,
+      is_tie
+    ) %>%
+    mutate(
+      mv = abs(home_final - visitor_final)
+    ) %>%
+    select(
+      season, 
+      game_key,
+      game_date,
+      week,
+      game_day, 
+      home_club_code,
+      visitor_club_code,
+      home_final,
+      visitor_final,
+      mv
+    ) %>% 
+    distinct(game_date, .keep_all = TRUE) %>% 
+    group_by(week) 
+  return(record)
+}
+final_score("2019", "SEA")
+```
+
+# Season and Game EDA (in progress)
+
+```{r}
+summary <- function(Season, Team) {
+  record <- data_with_scores %>%
+    filter(season == Season,
+           (home_club_code == Team) |
+             (visitor_club_code == Team)) %>%
+    select(
+      season,
+      week, 
+      game_key,
+      game_date,
+      game_clock,
+      home_club_code,
+      visitor_club_code,
+      is_scoring_play,
+      home_score_after_play,
+      visitor_score_after_play,
+      home_final,
+      visitor_final,
+      winning_team,
+      is_tie
+    ) %>%
+    mutate(
+      mv = abs(home_final - visitor_final)
+    ) %>%
+    group_by(game_key, week, home_club_code, visitor_club_code) %>% 
+    summarise(
+      is_scoring_play = n()
+      )
+  return(record)
+}
+summary("2019", "SEA")
+```
+
+How many scoring plays in a game? 
+How many scoring plays in a season? 
+- include game clock of each scoring play 
+- include the scoreboard at each scoring play
+- include each margin of victory for each game 
+What is the percentage of scoring plays in a game? 
+Biggest margin of victory 
+
+organization: 
+Season Record 
+Team: SEA 
+week 1  | game day | home | visitor | # of home scoring plays | # of visitor scoring plays | home_final | visitor_final | margin of victory
+.
+.
+.
+week 16  
+Game Record 
+week | game day | game clock | home | visitor | scoring play | | margin of victory
+
+```{r}
+
+```
+
+Issue: missing scoring play 
+- find first scoring play in a game 
+- leave value of 0 in defensive team record 

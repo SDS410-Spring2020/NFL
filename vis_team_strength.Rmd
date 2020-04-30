@@ -140,21 +140,38 @@ nfl_elo <- read.csv("nfl_elo.csv") %>%
 
 ## full_with_elo 
 ```{r}
+for_elo <- data %>% 
+  select(game_key,
+         season,
+         season_type,
+         game_number,
+         week,
+         game_date,
+         game_day,
+         home_club_code,
+         visitor_club_code,
+         possession_team,
+         ep) %>% 
+  distinct(game_key, .keep_all = TRUE)
+
+#full_with_elo 
 full_with_elo= merge(nfl_elo, 
-                     fulldata_with_thurs, 
-                     by.x=c("home_club_code", "visitor_club_code", "game_date"), 
-                     by.y=c("home_club_code", "visitor_club_code", "game_date")) 
+                     for_elo, 
+                     by.x= c("home_club_code", "visitor_club_code", "game_date"), 
+                     by.y= c("home_club_code", "visitor_club_code", "game_date"))
 
 full_with_elo <- full_with_elo %>% 
   mutate(
+    season = season.x,
+    season.y = NULL, 
     is_home = ifelse(as.character(home_club_code) == as.character(possession_team), 1, 0),
     is_visitor =
       case_when(is_home == 1 ~ 0,
                 is_home == 0 ~ 1),
     ep1 = 
       case_when(
-      is_home == 1 ~ ep, 
-      is_home == 0 ~ 0),
+        is_home == 1 ~ ep, 
+        is_home == 0 ~ 0),
     ep2 = 
       case_when(
         is_visitor == 1 ~ ep,
@@ -276,7 +293,7 @@ ggplot(data = full_with_elo, aes(x = elo1_pre)) +
 
 #plot epa on thurs vs sunday - density
 ```{r}
-ggplot(data = full_with_elo, aes(x = elo1_pre)) +
+ggplot(data =   full_with_elo, aes(x = elo2_pre)) +
   geom_density(kernel = "rectangular", aes(color = game_day)) +
   ggtitle("Distribution of Home ELO by gameday") 
 ```

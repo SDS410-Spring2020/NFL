@@ -51,7 +51,8 @@ nfl_elo_2019 <- read.csv("nfl_elo_latest.csv") %>%
     home_club_code = team1, 
     visitor_club_code = team2)
   mutate(
-    game_date = as.Date(date, "%Y-%m-%d"), 
+    game_date = as.Date(date, "%Y-%m-%d"),
+    date = NULL, 
     home_club_code = 
       case_when(
         as.character(home_club_code) == "HOU" ~ "HST",
@@ -83,6 +84,7 @@ nfl_elo <- read.csv("nfl_elo.csv") %>%
     visitor_club_code = team2) %>% 
   mutate(
     game_date = as.Date(date, "%Y-%m-%d"), 
+    date = NULL, 
     home_club_code = 
       case_when(
         as.character(home_club_code) == "HOU" ~ "HST",
@@ -106,25 +108,55 @@ nfl_elo <- read.csv("nfl_elo.csv") %>%
         as.character(visitor_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
         TRUE ~ as.character(visitor_club_code)))
 
+
+for_elo <- data %>% 
+  select(game_key,
+         home_team,
+         visit_team, 
+         season,
+         season_type,
+         game_number,
+         week,
+         game_date,
+         game_day,
+         home_club_code,
+         visitor_club_code,
+         possession_team,
+         ep) %>% 
+  distinct(game_key, .keep_all = TRUE)
+
 #full_with_elo 
 full_with_elo= merge(nfl_elo, 
-                     fulldata_with_thurs, 
-                     by.x=c("home_club_code", "visitor_club_code", "game_date"), 
-                     by.y=c("home_club_code", "visitor_club_code", "game_date"))
+                     for_elo, 
+                     by.x= c("home_club_code", "visitor_club_code", "game_date", "season"), 
+                     by.y= c("home_club_code", "visitor_club_code", "game_date", "season"))
+
+full_with_elo <- full_with_elo %>% 
+  mutate(
+    season = season.x,
+    season.y = NULL,
+    season.x = NULL, 
+    is_home = ifelse(as.character(home_club_code) == as.character(possession_team), 1, 0),
+    is_visitor =
+      case_when(is_home == 1 ~ 0,
+                is_home == 0 ~ 1),
+    ep1 = 
+      case_when(
+        is_home == 1 ~ ep, 
+        is_home == 0 ~ 0),
+    ep2 = 
+      case_when(
+        is_visitor == 1 ~ ep,
+        is_visitor == 0 ~ 0))
 #NFL_team_city
 
 #Stadium_data
 
 #Stadium_data_coordinates
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv") %>%
-  rename(home_team = Home_Team) %>%
-  rename(stadium = Stadium) %>%
-  rename(season = Season)
+  clean_names()
 
 #Visit_team_data 
 visit_team_data <- read.csv("visit_team_data.csv") %>%
-  rename(visit_team = Visit_Team) %>%
-  rename(visit_stadium = Visit_Stadium) %>%
-  rename(season = Season) %>%
-  rename(visit_lat = Visit_lat) %>%
-  rename(visit_long = Visit_long)
+  clean_names() 
+

@@ -146,7 +146,7 @@ ggplot(win_mergin_data, aes(x = margin_victory)) +
 # test stat
 mv_distance <- mv_distance_all %>% 
   specify(avg_mv ~ avg_travel) %>% 
-  calculate(stat = "correlation",)
+  calculate(stat = "correlation")
 
 # generate samples 
 null_mv_distance <- mv_distance_all %>%

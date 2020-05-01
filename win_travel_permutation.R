@@ -157,7 +157,7 @@ null_win_distance %>%
 ggplot(win_distance_all, aes(x = avg_travel, y = Visit_Win, fill = Visit_Win)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
-  labs(x = "Average travel distance from 2007 to 2018", y = NULL) +
+  labs(x = "Average travel distance from 2007 to 2018 (miles)", y = NULL, title ="Average Travel Distribution \n (visitor team win - home team win)") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 

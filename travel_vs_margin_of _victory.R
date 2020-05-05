@@ -163,8 +163,11 @@ null_mv_distance %>%
 
 # correlation between average travel distance and average margin of victory
 ggplot(mv_distance_all, aes(x = avg_travel, y = avg_mv)) +
-  geom_point()+
-  geom_smooth(method=lm, se=FALSE)
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "Average Travel Distances from 2010 to 2019 (miles)", 
+       y = "Average Margin of Victory \n (Home team score - visitor team score)", 
+       title = "Correlation between Average Travel Distance and Average Margin of Victory")
 
 
 # simulaiton based null distribution
@@ -176,7 +179,6 @@ null_mv_distance %>%
        subtitle = "Red line shows observed correlaiton between\n average travel distance and average margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
-
 
 
 # Categorizing the travel distance 
@@ -228,25 +230,26 @@ null_mv_travel <- mv_cat_distance_all %>%
 null_mv_travel
 
 null_mv_travel %>% 
-  get_pvalue(obs_stat = diff_cat_distance, direction = "both")
-# 0.457
+  get_pvalue(obs_stat = diff_cat_distance, direction = "right")
 
-# the p-value is 0.457, which means that there’s a 9.4% chance of seeing a difference at least as large as 78.2 in a world where there’s no difference
+# the p-value is 0.774
+
 
 ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9","#999999"), guide = FALSE) +
-  labs(x = "Average Margin of Victory from 2010 to 2019", y = NULL,title="Comparison of Average Margin of Victory for Visiting Teams") +
+  labs(x = "Average Margin of Victory from 2010 to 2019", y = NULL,
+       title="Comparison of Average Margin of Victory for Visiting Teams \n close < 1000 miles, 1000 <= far <= 2000, 2000 < very far ") +
   theme_minimal() +
-  theme(panel.grid.minor = element_blank())
+  theme(panel.grid.minor = element_blank()) 
 
 
 null_mv_travel %>% 
   visualise() +
   shade_p_value(obs_stat = diff_cat_distance, direction = "right") + 
-  labs(x = "Differences in Mean Margin of Victory between Three different Travel Distances",
+  labs(x = "The F-value from comparing three different groups \n close < 1000 miles, 1000 <= far <= 2000, 2000 < very far",
        y = "Count",
-       subtitle = "Red line shows observed variatio of margin of victory") +
+       subtitle = "Red line shows observed variation of margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
 

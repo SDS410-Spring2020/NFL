@@ -148,6 +148,9 @@ mv_distance <- mv_distance_all %>%
   specify(avg_mv ~ avg_travel) %>% 
   calculate(stat = "correlation")
 
+lin_mod <- lm(avg_mv ~ avg_travel, data = mv_distance_all)
+summary(lin_mod)
+
 # generate samples 
 null_mv_distance <- mv_distance_all %>%
   specify(avg_mv ~ avg_travel) %>%

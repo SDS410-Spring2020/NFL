@@ -216,7 +216,7 @@ null_distance %>%
 ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
-  labs(x = "Average travel distance from 2007 to 2018", y = NULL) +
+  labs(x = "Average travel distance from 2007 to 2018", y = NULL, title = "Comparison of Average Travel Distahce \n Thursday games - non-Thursday games") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 ```

@@ -220,7 +220,7 @@ distance_all <- sum_distance_all %>%
 ggplot(distance_all, aes(x=team, y=avg_travel)) +
   geom_bar(stat="identity") + 
   coord_flip() + 
-  labs(y = "Average Travel Distance from 2007 to 2018 (miles)")
+  labs(y = "Average Travel Distance from 2007 to 2018 (miles)", title = "Each Teams's Average Travel Distance")
   
 ```
 

@@ -239,7 +239,7 @@ ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9","#999999"), guide = FALSE) +
   labs(x = "Average Margin of Victory from 2010 to 2019", y = NULL,
-       title="Comparison of Average Margin of Victory for Visiting Teams \n close < 1000 miles, 1000 <= far <= 2000, 2000 < very far ") +
+       title="Comparison of Average Margin of Victory for Visiting Teams \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
 
@@ -247,7 +247,7 @@ ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)
 null_mv_travel %>% 
   visualise() +
   shade_p_value(obs_stat = diff_cat_distance, direction = "right") + 
-  labs(x = "The F-value from comparing three different groups \n close < 1000 miles, 1000 <= far <= 2000, 2000 < very far",
+  labs(x = "The F-value from comparing three different groups \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)",
        y = "Count",
        subtitle = "Red line shows observed variation of margin of victory") +
   theme_minimal() +

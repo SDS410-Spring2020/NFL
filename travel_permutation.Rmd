@@ -33,16 +33,18 @@ library(scales)
 set.seed(1234)
 ```
 
-
+### Importing data sets
 ```{r, include=FALSE}
 # importing data
+#game data
 games<-read.csv("data/games_Smith.csv")
+# stadium coordinates
 stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
+# visit team stadium coordinates
 visit_team_data <- read.csv("visit_team_data.csv")
-ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
-all_data_coordinates <- read.csv("All_data_coordinates.csv")
 ```
 
+### Creating datasets
 ```{r,include=FALSE}
 #cleaning df column names to have a common variable with games (home_team)
 stadium_data_coordinates <- stadium_data_coordinates %>% 
@@ -66,22 +68,23 @@ games_w_coordinates <- games_w_coordinates[!duplicated(games_w_coordinates$GameK
 
 remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
 
+# creating dataset with just domestic games
 domestic_games <- games_w_coordinates %>%
   filter(!grepl(remove.list, Stadium)) %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0)) 
 
 domestic_games <- domestic_games[!duplicated(domestic_games$GameKey), ]
 
+# creating dataset with just international games
 international_games <- games_w_coordinates %>%
   filter(grepl(remove.list, Stadium)) %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0)) 
 
 international_games <- international_games[!duplicated(international_games$GameKey), ]
 
-
 ```
 
-
+### Calculate the travel distance
 ```{r}
 
 # calculate distance
@@ -91,7 +94,7 @@ calc_domestic <- domestic_games %>%
   mutate(distance_m = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
   mutate(distance_mile = distance_m*0.6214/1000)
 
-# calc_domestic <- calc_domestic[!duplicated(calc_domestic$Gamekey), ]
+# Adding a categorical travel distance (close, far, and very far) 
 
 calc_domestic <- calc_domestic %>%
   mutate(distance = ifelse(distance_mile > 2000, "very far",
@@ -116,25 +119,20 @@ num_games_season_visit <- calc_domestic %>%
   summarise(num_game_visit =n()) %>%
   rename(team = Visit_Team)
 
-# function to get sem
-se <- function(x) sqrt(var(x)/length(x))
 
-# get sem
 games_season_sem <- calc_domestic %>%
   group_by(Visit_Team,Season,is_thurs) %>%
-  summarise(sem=se(distance_mile)) %>%
   rename(team=Visit_Team)
 
 num_games_season_home <- calc_domestic %>%
   group_by(Home_Team,Season,is_thurs) %>%
-  summarise(num_game_home =n()) %>%
   rename(team = Home_Team)
 
+# average travel distance per team and for each season 
 distance_season <- sum_distance_season %>%
   inner_join(num_games_season_visit) %>%
   inner_join(num_games_season_home)%>%
   mutate(total_game = num_game_visit + num_game_home) %>%
-  inner_join(games_season_sem) %>%
   mutate(avg_travel = travel_dis/total_game)
 
 
@@ -154,11 +152,6 @@ num_games_home <- calc_domestic %>%
   summarise(num_game_home =n()) %>%
   rename(Team = Home_Team) 
 
-# get the standard error mean for travel distance
-all_games_sem <- calc_domestic %>%
-  group_by(Visit_Team,is_thurs) %>%
-  summarise(sem = se(distance_mile)) 
-
 
 distance_all <- sum_distance_all %>%
   inner_join(num_games_visit) %>%
@@ -166,11 +159,13 @@ distance_all <- sum_distance_all %>%
 
 distance_all[is.na(distance_all)] <- 0
 
+# creating a dataset with  overall average travel distance on thursday and non-thursday for each team
 distance_all<- distance_all %>%
   mutate(num_game_visit = as.numeric(num_game_visit))%>%
   mutate(total_game = num_game_visit + num_game_home) %>%
   mutate(avg_travel = travel_dis/total_game) 
 
+# changing the thursday and non-thursday game names
 distance_all <- distance_all %>%
     mutate(is_thurs = recode(is_thurs,
                          "1" = "Thursday games",
@@ -178,7 +173,6 @@ distance_all <- distance_all %>%
   mutate(is_thurs = as.character(is_thurs))
 
 
-# str(distance_all)
 ```
 
 ```{r}
@@ -209,6 +203,7 @@ null_distance %>%
 # --> no statistically significant difference between the two 
 ```
 
+### Creating a graph that shows the distribution of average travel distance for thusday and non-thursday games
 ```{r,message=FALSE}
 ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
@@ -218,6 +213,8 @@ ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   theme(panel.grid.minor = element_blank())
 ```
 
+
+### Creating a graph that shows the null distribution obtained from the permutation simulation
 ```{r}
 null_distance %>% 
   visualise() +

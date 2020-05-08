@@ -120,12 +120,9 @@ num_games_season_visit <- calc_domestic %>%
   rename(team = Visit_Team)
 
 
-games_season_sem <- calc_domestic %>%
-  group_by(Visit_Team,Season,is_thurs) %>%
-  rename(team=Visit_Team)
-
 num_games_season_home <- calc_domestic %>%
-  group_by(Home_Team,Season,is_thurs) %>%
+  group_by(Home_Team, Season,is_thurs) %>%
+   summarise(num_game_home =n()) %>%
   rename(team = Home_Team)
 
 # average travel distance per team and for each season 
@@ -208,7 +205,7 @@ null_distance %>%
 ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
-  labs(x = "Average travel distance from 2007 to 2018", y = NULL, title = "Comparison of Average Travel Distahce \n Thursday games - non-Thursday games") +
+  labs(x = "Average travel distance from 2007 to 2018 (miles)", y = NULL, title = "Comparison of Average Travel Distahce \n Thursday games - non-Thursday games") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank())
 ```
@@ -219,7 +216,7 @@ ggplot(distance_all, aes(x = avg_travel, y = is_thurs, fill = is_thurs)) +
 null_distance %>% 
   visualise() +
   shade_p_value(obs_stat = diff_distance,direction = "both") + 
-  labs(x = "Difference in mean travel distance\n(Not Thursday games − Thursday games)",
+  labs(x = "Difference in mean travel distance (miles) \n(Not Thursday games − Thursday games)",
        y = "Count",
        subtitle = "Red line shows observed difference in mean travel distances") +
   theme_minimal() +

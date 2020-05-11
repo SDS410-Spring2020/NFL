@@ -89,7 +89,7 @@ dim(sun)
 #cacluate original test stat - difference in mean EPA
 mean_epa_thurs <- mean(thurs$epa, na.rm = T)
 mean_epa_sun <- mean(sun$epa, na.rm = T)
-(original_ts <-mean_epa_thurs - mean_epa_sun)
+(original_ts <-mean_epa_sun - mean_epa_thurs)
 
 #regroup data
 thurs_epa <- thurs %>% select(epa)
@@ -108,7 +108,7 @@ for (i in 1:1000){
   mean_R <- mean(tempR, na.rm = TRUE)
   mean_S <- mean(tempS, na.rm = TRUE)
   
-  distribution[i] = mean_R - mean_S
+  distribution[i] =  mean_S - mean_R
   
 }
 
@@ -124,7 +124,7 @@ ggplot(data = mean_differences, aes(x = distribution)) +
   geom_histogram(color = "blue", fill = "lightblue", bins = 15) +
   geom_vline(xintercept = original_ts, linetype = 2, color = "red") +
   ggtitle("Permutation test on EPA difference") +
-  xlab("Thursday EPA minus Non-Thursday EPA") +
+  xlab("Non-Thursday EPA - Thursday EPA") +
   labs(caption = "red line = observed differene") +
   theme_minimal()
   
@@ -241,6 +241,114 @@ pats_epa_df <-  data %>%
   mutate(season = as.factor(season)) %>% 
   group_by(home_team, is_thurs, season) %>% 
   summarise(mean_epa = mean(epa, na.rm = T))
+
+broncos_epa_df <-  data %>% 
+  filter(home_team == "Denver Broncos") %>% 
+  mutate(quarter = as.numeric(quarter)) %>% 
+  mutate(half = ifelse(quarter < 3, 1, ifelse(quarter == 5, 3, 2))) %>%
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs)) %>% 
+  #grouping by game and half because EPA does not carry over halves or games
+  group_by(game_key, half) %>%
+  #make sure plays are in correct order
+  arrange(game_key, play_id) %>%
+  #calculating EPA - ADDED: if possession changes EPA must be calculated differently
+  mutate(
+    #actual points added
+    points_added = ifelse(home_club_code == possession_team,
+                          #if home team has the ball its the home points gained - visitor points gained
+                          home_score_after_play - home_score_before_play - (visitor_score_after_play - visitor_score_before_play),
+                          #otherwise its the visitor points gained - home points gained
+                          visitor_score_after_play - visitor_score_before_play - (home_score_after_play - home_score_before_play)),
+    #adding extra point to TDs - leaving rest of points added alone
+    points_added = ifelse(points_added == 6, 7, points_added),
+    points_added = ifelse(points_added == -6, -7, points_added),
+    #calculating EPA - ADDED: if possession changes EPA must be calculated differently, removing Extra Point / kickoff plays
+    epa = 
+      case_when(#when play is a scrimmage play, no scoring and no change of possession
+        down != 0 & points_added == 0 & possession_team == lead(possession_team) ~ lead(ep) - ep,
+        #when a play is a scrimmage play, no scoring and a change of possession
+        down != 0 & points_added == 0 & possession_team != lead(possession_team) ~ -lead(ep) - ep,
+        #when a play is a scrimmage play with scoring
+        down != 0 & points_added != 0 ~ points_added - ep)
+  ) %>%
+  #ungrouping dataframe
+  ungroup() %>% 
+  mutate(season = as.factor(season)) %>% 
+  group_by(home_team, is_thurs, season) %>% 
+  summarise(mean_epa = mean(epa, na.rm = T))
+
+dolphins_epa_df <-  data %>% 
+  filter(home_team == "Miami Dolphins") %>% 
+  mutate(quarter = as.numeric(quarter)) %>% 
+  mutate(half = ifelse(quarter < 3, 1, ifelse(quarter == 5, 3, 2))) %>%
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs)) %>% 
+  #grouping by game and half because EPA does not carry over halves or games
+  group_by(game_key, half) %>%
+  #make sure plays are in correct order
+  arrange(game_key, play_id) %>%
+  #calculating EPA - ADDED: if possession changes EPA must be calculated differently
+  mutate(
+    #actual points added
+    points_added = ifelse(home_club_code == possession_team,
+                          #if home team has the ball its the home points gained - visitor points gained
+                          home_score_after_play - home_score_before_play - (visitor_score_after_play - visitor_score_before_play),
+                          #otherwise its the visitor points gained - home points gained
+                          visitor_score_after_play - visitor_score_before_play - (home_score_after_play - home_score_before_play)),
+    #adding extra point to TDs - leaving rest of points added alone
+    points_added = ifelse(points_added == 6, 7, points_added),
+    points_added = ifelse(points_added == -6, -7, points_added),
+    #calculating EPA - ADDED: if possession changes EPA must be calculated differently, removing Extra Point / kickoff plays
+    epa = 
+      case_when(#when play is a scrimmage play, no scoring and no change of possession
+        down != 0 & points_added == 0 & possession_team == lead(possession_team) ~ lead(ep) - ep,
+        #when a play is a scrimmage play, no scoring and a change of possession
+        down != 0 & points_added == 0 & possession_team != lead(possession_team) ~ -lead(ep) - ep,
+        #when a play is a scrimmage play with scoring
+        down != 0 & points_added != 0 ~ points_added - ep)
+  ) %>%
+  #ungrouping dataframe
+  ungroup() %>% 
+  mutate(season = as.factor(season)) %>% 
+  group_by(home_team, is_thurs, season) %>% 
+  summarise(mean_epa = mean(epa, na.rm = T))
+
+atlanta_epa_df <-  data %>% 
+  filter(home_team == "Atlanta Falcons") %>% 
+  mutate(quarter = as.numeric(quarter)) %>% 
+  mutate(half = ifelse(quarter < 3, 1, ifelse(quarter == 5, 3, 2))) %>%
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs)) %>% 
+  #grouping by game and half because EPA does not carry over halves or games
+  group_by(game_key, half) %>%
+  #make sure plays are in correct order
+  arrange(game_key, play_id) %>%
+  #calculating EPA - ADDED: if possession changes EPA must be calculated differently
+  mutate(
+    #actual points added
+    points_added = ifelse(home_club_code == possession_team,
+                          #if home team has the ball its the home points gained - visitor points gained
+                          home_score_after_play - home_score_before_play - (visitor_score_after_play - visitor_score_before_play),
+                          #otherwise its the visitor points gained - home points gained
+                          visitor_score_after_play - visitor_score_before_play - (home_score_after_play - home_score_before_play)),
+    #adding extra point to TDs - leaving rest of points added alone
+    points_added = ifelse(points_added == 6, 7, points_added),
+    points_added = ifelse(points_added == -6, -7, points_added),
+    #calculating EPA - ADDED: if possession changes EPA must be calculated differently, removing Extra Point / kickoff plays
+    epa = 
+      case_when(#when play is a scrimmage play, no scoring and no change of possession
+        down != 0 & points_added == 0 & possession_team == lead(possession_team) ~ lead(ep) - ep,
+        #when a play is a scrimmage play, no scoring and a change of possession
+        down != 0 & points_added == 0 & possession_team != lead(possession_team) ~ -lead(ep) - ep,
+        #when a play is a scrimmage play with scoring
+        down != 0 & points_added != 0 ~ points_added - ep)
+  ) %>%
+  #ungrouping dataframe
+  ungroup() %>% 
+  mutate(season = as.factor(season)) %>% 
+  group_by(home_team, is_thurs, season) %>% 
+  summarise(mean_epa = mean(epa, na.rm = T))
   
 season_data <- data %>% 
   select(season, game_key, home_team, visit_team, home_score_after_play, visitor_score_after_play) %>% 
@@ -322,6 +430,39 @@ pats_plot <- ggplot(data = pats_epa_df, aes(x = season, y = mean_epa, fill = is_
   ggtitle(label = "Mean EPA for the New England Patriots", subtitle = "Comparing Thursday & Non Thursday games by season") +
   labs(fill = "Thursday Status", y = "Mean EPA", x = "Season")
 pats_plot
+
+
+dolphins_plot <- ggplot(data = dolphins_epa_df, aes(x = season, y = mean_epa, fill = is_thurs)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  geom_hline(yintercept = 0, color = "black", size = 1)  +
+  ggtitle(label = "Mean EPA for the New England Patriots", subtitle = "Comparing Thursday & Non Thursday games by season") +
+  labs(fill = "Thursday Status", y = "Mean EPA", x = "Season")
+dolphins_plot
+
+dolphin_box <- ggplot(data = dolphins_epa_df, aes(x = is_thurs, y = mean_epa, fill = is_thurs)) +
+  geom_boxplot() +
+  ggtitle("Comparing EPA on Thurday and Non-Thursday games", subtitle = "Team = Miami Dolphins") +
+  labs(x = "Thursday status", y = "mean EPA")
+dolphin_box
+
+pats_box <- ggplot(data = pats_epa_df, aes(x = is_thurs, y = mean_epa, fill = is_thurs)) +
+  geom_boxplot() +
+  ggtitle("Comparing EPA on Thurday and Non-Thursday games", subtitle = "Team =  New England Patriots") +
+  labs(x = "Thursday status", y = "mean EPA")
+pats_box
+
+broncos_box <- ggplot(data = broncos_epa_df, aes(x = is_thurs, y = mean_epa, fill = is_thurs)) +
+  geom_boxplot() +
+  ggtitle("Comparing EPA on Thurday and Non-Thursday games", subtitle = "Team =  New England Patriots") +
+  labs(x = "Thursday status", y = "mean EPA")
+broncos_box
+
+falcons_box <- ggplot(data = atlanta_epa_df, aes(x = is_thurs, y = mean_epa, fill = is_thurs)) +
+  geom_boxplot() +
+  ggtitle("Comparing EPA on Thurday and Non-Thursday games", subtitle = "Team = Atlanta Falcons") +
+  labs(x = "Thursday status", y = "mean EPA")
+falcons_box
 
 
 #plot 

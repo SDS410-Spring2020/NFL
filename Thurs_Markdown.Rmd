@@ -33,6 +33,7 @@ thurs<-data %>%
 non_thurs<-data%>% 
   filter(Game_Day!="Thursday")
 
+
 ```
 
 #PLots

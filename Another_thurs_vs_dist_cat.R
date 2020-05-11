@@ -29,12 +29,12 @@ pbp<-read.csv("data/pbp_Smith.csv") %>%
   group_by(GameKey) %>%
   slice(n()) %>%
   ungroup 
-  
+
 short_pbp <- pbp %>%
   select(1,18,19,30)%>%
   mutate(margin_victory = HomeScoreAfterPlay - VisitorScoreAfterPlay)
-  
-  
+
+
 win_mergin_data <- games %>%
   inner_join(short_pbp, by="GameKey") %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday","Thursday games","Not Thursday games"))
@@ -95,169 +95,121 @@ mv_calc_domestic <- mv_calc_domestic %>%
                            ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close"))) 
 
 
-mv_sum_distance_all <- mv_calc_domestic %>%
-  group_by(Visit_Team) %>%
-  summarise(travel_dis =sum(distance_mile)) %>%
-  rename(Team = Visit_Team)
-
-
-mv_num_games_visit <- mv_calc_domestic %>%
-  group_by(Visit_Team) %>%
-  summarise(num_game_visit =n()) %>%
-  rename(Team = Visit_Team)
-
-mv_num_games_home <- mv_calc_domestic %>%
-  group_by(Home_Team) %>%
-  summarise(num_game_home =n()) %>%
-  rename(Team = Home_Team)
-
-mv_average_home <- mv_calc_domestic %>%
-  group_by(Home_Team)%>%
-  summarise(avg_home_mv = mean(margin_victory)) %>%
-  rename(Team = Home_Team)
-
-mv_average_visit <- mv_calc_domestic %>%
-  group_by(Visit_Team)%>%
-  summarise(avg_visit_mv = mean(margin_victory))%>%
-  rename(Team = Visit_Team)
-
-
-mv_distance_all <- mv_sum_distance_all %>%
-  inner_join(mv_num_games_visit) %>%
-  left_join(mv_num_games_home)%>%
-  left_join(mv_average_home)%>%
-  left_join(mv_average_visit)%>%
-  mutate(total_game = num_game_visit + num_game_home) %>%
-  mutate(avg_travel = travel_dis/total_game) %>%
-  mutate(avg_mv = ((num_game_visit*avg_visit_mv)+(num_game_home*avg_home_mv))/total_game)
-
-
-# plots
-# Distribution of Margin of Victory
-ggplot(win_mergin_data, aes(x = margin_victory)) +
-  geom_density(color="darkblue",fill="lightblue") +
-  geom_vline(aes(xintercept=mean(margin_victory)),
-           color="blue", linetype="dashed", size=1) +
-  labs(x="Margin of Victory (home score - visit score)", title = "The Distribution of Margin of Victory")
-
-
-# permutation
-
-# test stat
-mv_distance <- mv_distance_all %>% 
-  specify(avg_mv ~ avg_travel) %>% 
-  calculate(stat = "correlation")
-
-lin_mod <- lm(avg_mv ~ avg_travel, data = mv_distance_all)
-summary(lin_mod)
-
-# generate samples 
-null_mv_distance <- mv_distance_all %>%
-  specify(avg_mv ~ avg_travel) %>%
-  hypothesize(null = "independence") %>%
-  generate(reps = 5000, type = "permute") %>%
-  calculate("correlation")
-
-# run a permutation test
-null_mv_distance %>% 
-  get_pvalue(obs_stat = mv_distance, direction = "both")
-# p-value = 0.442
-
-
-# correlation between average travel distance and average margin of victory
-ggplot(mv_distance_all, aes(x = avg_travel, y = avg_mv)) +
-  geom_point() +
-  geom_smooth(method=lm, se=FALSE) +
-  labs(x = "Average Travel Distances from 2010 to 2019 (miles)", 
-       y = "Average Margin of Victory \n (Home team score - visitor team score)", 
-       title = "Correlation between Average Travel Distance and Average Margin of Victory")
-
-
-# simulaiton based null distribution
-null_mv_distance %>% 
-  visualise() +
-  shade_p_value(obs_stat = mv_distance,direction = "both") + 
-  labs(x = "Correlation coefficient between\n average travel distance and average margin of victory",
-       y = "Count",
-       subtitle = "Red line shows observed correlaiton between\n average travel distance and average margin of victory") +
-  theme_minimal() +
-  theme(panel.grid.minor = element_blank()) 
-
 
 # Categorizing the travel distance 
 # filtered the data to just visit teams
 
 mv_cat_distance_all <- mv_calc_domestic %>%
-  group_by(Visit_Team, distance) %>%
+  group_by(Visit_Team, distance,is_thurs) %>%
   summarise(travel_dis =sum(distance_mile)) %>%
   rename(Team = Visit_Team)
 
 
 mv_cat_num_games_visit <- mv_calc_domestic %>%
-  group_by(Visit_Team, distance) %>%
+  group_by(Visit_Team, distance,is_thurs) %>%
   summarise(num_game_visit =n()) %>%
   rename(Team = Visit_Team)
 
 
 mv_cat_average_visit <- mv_calc_domestic %>%
-  group_by(Visit_Team, distance)%>%
+  group_by(Visit_Team, distance,is_thurs)%>%
   summarise(avg_visit_mv = mean(margin_victory))%>%
   rename(Team = Visit_Team)
 
 
 mv_cat_distance_all <- mv_cat_distance_all %>%
-  inner_join(mv_cat_num_games_visit) %>%
+  inner_join(mv_cat_num_games_visit ) %>%
   left_join(mv_cat_average_visit) %>%
   mutate(avg_travel = travel_dis/num_game_visit) 
 
+Thurs_data <-mv_cat_distance_all %>%
+  filter(is_thurs == 1)
 
+Thurs_data %>%
+  group_by(distance) %>%
+  summarise(num_games = n())
 
+# close = 32
+# far = 21
+# very far = 2
+
+mean(Thurs_data$avg_visit_mv)
+# 1.49151515
 
 # run a permutation test 
 
 # obtaining the test stats
-diff_cat_distance <- mv_cat_distance_all %>% 
+diff_cat_distance_thurs <- Thurs_data %>%
   specify(avg_visit_mv ~ distance) %>% 
   calculate(stat = "F")
 
-diff_cat_distance
-# 0.258
+diff_cat_distance_thurs
+# 1.82
 
 # generate samples 
-null_mv_travel <- mv_cat_distance_all %>%
+null_mv_travel_thurs <- Thurs_data %>%
   specify(avg_visit_mv ~ distance) %>%
   hypothesize(null = "independence") %>%
   generate(reps = 5000, type = "permute") %>%
   calculate("F")
 
-null_mv_travel
+null_mv_travel_thurs
 
-null_mv_travel %>% 
-  get_pvalue(obs_stat = diff_cat_distance, direction = "right")
+null_mv_travel_thurs %>% 
+  get_pvalue(obs_stat = diff_cat_distance_thurs, direction = "right")
 
-# the p-value is 0.774
+# the p-value is 0.169
 
 
-ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)) +
+  
+ggplot(Thurs_data, aes(x = avg_visit_mv, y = distance, fill = distance)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9","#999999"), guide = FALSE) +
   labs(x = "Average Margin of Victory from 2010 to 2019", y = NULL,
-       title="Comparison of Average Margin of Victory for Visiting Teams \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)") +
+       title="Comparison of Average Margin of Victory for Visiting Teams for Thursday Games \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
 
 
-null_mv_travel %>% 
+null_mv_travel_thurs %>% 
   visualise() +
-  shade_p_value(obs_stat = diff_cat_distance, direction = "right") + 
-  labs(x = "The F-value from comparing three different groups \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)",
+  shade_p_value(obs_stat = diff_cat_distance_thurs, direction = "right") + 
+  labs(x = "The F-value from comparing three different groups for Thursday games \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)",
        y = "Count",
        subtitle = "Red line shows observed variation of margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
 
 
+# run a bootstrap test 
+# However, I am not sure if I am running the test correctly.
 
+# generate samples 
+boot_mv_travel_thurs <- Thurs_data %>%
+  specify(response = avg_visit_mv, explanatory = distance ) %>%
+  hypothesize(null = "point", mu = 1.49) %>%
+  generate(reps = 5000, type = "bootstrap") %>%
+  calculate("F")
+
+
+
+
+boot_mv_travel_thurs
+
+boot_mv_travel_thurs %>% 
+  get_pvalue(obs_stat = diff_cat_distance_thurs, direction = "right")
+
+# the p-value is 0.599
+
+
+boot_mv_travel_thurs %>% 
+  visualise() +
+  shade_p_value(obs_stat = diff_cat_distance_thurs, direction = "right") + 
+  labs(x = "The F-value from comparing three different groups for Thursday games \n (close < 1000 miles, 1000 <= far <= 2000, 2000 < very far)",
+       y = "Count",
+       subtitle = "Red line shows observed variation of margin of victory") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank()) 
 
 
 

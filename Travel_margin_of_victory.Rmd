@@ -1,4 +1,20 @@
-# importing libraries
+---
+title: "Travel distance vs margin of victory"
+author: "Aoi Ogawa"
+date: "5/7/2020"
+output: html_document
+---
+
+
+## This document analyzed the relation between margin of victory and travel distance, and win/lose and travel distance
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### importing libraries
+```{r, include = FALSE, warning=FALSE}
 library(datasets)
 library(maps)
 library(tidyr)
@@ -18,9 +34,12 @@ library(infer)
 library(ggridges)
 library(scales)
 
+# setting seed
 set.seed(1234)
+```
 
-
+### Importing data
+```{r,warning=FALSE}
 #game data
 games <-read.csv("data/games_Smith.csv") 
 
@@ -33,20 +52,22 @@ pbp<-read.csv("data/pbp_Smith.csv") %>%
 short_pbp <- pbp %>%
   select(1,18,19,30)%>%
   mutate(margin_victory = HomeScoreAfterPlay - VisitorScoreAfterPlay)
-  
-  
+
+
+# joining the two datasets  
 win_mergin_data <- games %>%
   inner_join(short_pbp, by="GameKey") %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday","Thursday games","Not Thursday games"))
 
+```
 
+
+### Creating datasets
+```{r, warning=FALSE}
 #cleaning df column names to have a common variable with games (home_team)
 # stadium coordinates data
-stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv") %>% 
-  clean_names() %>%
-  rename(Stadium = stadium) %>%
-  rename(Home_Team = home_team) %>%
-  rename(Season = season)
+stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv") 
+
 
 # visit team stadium coordinates data
 visit_team_data <- read.csv("visit_team_data.csv")
@@ -68,21 +89,25 @@ mv_w_coordinates <- mv_w_coordinates[!duplicated(mv_w_coordinates$GameKey), ]
 
 remove.list <- paste(c('Wembley Stadium',"Rogers Centre","Wembley","Twickenham","Estadio Azteca","Twickenham Stadium","Azteca Stadium","Tottenham Hotspur Stadium","Tottenham Hotspur"), collapse = '|')
 
+
+# creating domestic games dataset
 mv_domestic_games <- mv_w_coordinates %>%
   filter(!grepl(remove.list, Stadium)) %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0)) 
 
 mv_domestic_games <- mv_domestic_games[!duplicated(mv_domestic_games$GameKey), ]
 
+# creating international games dataset
 mv_international_games <- mv_domestic_games %>%
   filter(grepl(remove.list, Stadium)) %>%
   mutate(is_thurs = ifelse(Game_Day == "Thursday", 1, 0)) 
 
 mv_international_games <- mv_international_games[!duplicated(mv_international_games$GameKey), ]
 
+```
 
-# calculate distance
-
+### Calculating distance
+```{r,warning=FALSE}
 mv_calc_domestic <- mv_domestic_games %>% 
   rowwise() %>%
   mutate(distance_m = distCosine(c(Home_long, Home_lat),c(Visit_long, Visit_lat))) %>%
@@ -90,11 +115,15 @@ mv_calc_domestic <- mv_domestic_games %>%
 
 mv_calc_domestic <- mv_calc_domestic[!duplicated(mv_calc_domestic$GameKey), ]
 
+# separating distance into three groups (close, far, very far)
 mv_calc_domestic <- mv_calc_domestic %>%
   mutate(distance = ifelse(distance_mile > 2000, "very far",
                            ifelse(distance_mile > 1000 && distance_mile <= 2000, "far", "close"))) 
 
+```
 
+### Creating datasets for 
+```{r,warning=FALSE}
 mv_sum_distance_all <- mv_calc_domestic %>%
   group_by(Visit_Team) %>%
   summarise(travel_dis =sum(distance_mile)) %>%
@@ -131,18 +160,21 @@ mv_distance_all <- mv_sum_distance_all %>%
   mutate(avg_travel = travel_dis/total_game) %>%
   mutate(avg_mv = ((num_game_visit*avg_visit_mv)+(num_game_home*avg_home_mv))/total_game)
 
+```
 
-# plots
-# Distribution of Margin of Victory
+### Create a graph that shows the distribution of margin of error (home score - visit score)
+```{r,warning=FALSE}
 ggplot(win_mergin_data, aes(x = margin_victory)) +
   geom_density(color="darkblue",fill="lightblue") +
   geom_vline(aes(xintercept=mean(margin_victory)),
            color="blue", linetype="dashed", size=1) +
   labs(x="Margin of Victory (home score - visit score)", title = "The Distribution of Margin of Victory")
 
+```
 
-# permutation
 
+# Run a permutation test
+```{r, warning=FALSE}
 # test stat
 mv_distance <- mv_distance_all %>% 
   specify(avg_mv ~ avg_travel) %>% 
@@ -162,8 +194,10 @@ null_mv_distance <- mv_distance_all %>%
 null_mv_distance %>% 
   get_pvalue(obs_stat = mv_distance, direction = "both")
 # p-value = 0.442
+```
 
-
+### Generating plots
+```{r,warning=FALSE}
 # correlation between average travel distance and average margin of victory
 ggplot(mv_distance_all, aes(x = avg_travel, y = avg_mv)) +
   geom_point() +
@@ -182,9 +216,10 @@ null_mv_distance %>%
        subtitle = "Red line shows observed correlaiton between\n average travel distance and average margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
+```
 
-
-# Categorizing the travel distance 
+### Categorizing the travel distance 
+```{r,warning=FALSE}
 # filtered the data to just visit teams
 
 mv_cat_distance_all <- mv_calc_domestic %>%
@@ -209,12 +244,10 @@ mv_cat_distance_all <- mv_cat_distance_all %>%
   inner_join(mv_cat_num_games_visit) %>%
   left_join(mv_cat_average_visit) %>%
   mutate(avg_travel = travel_dis/num_game_visit) 
+```
 
-
-
-
-# run a permutation test 
-
+### run a permutation test 
+```{r}
 # obtaining the test stats
 diff_cat_distance <- mv_cat_distance_all %>% 
   specify(avg_visit_mv ~ distance) %>% 
@@ -236,8 +269,11 @@ null_mv_travel %>%
   get_pvalue(obs_stat = diff_cat_distance, direction = "right")
 
 # the p-value is 0.774
+```
 
-
+### Generating plots
+```{r,warning=FALSE}
+# Plots that shows the distribution of average margin of victory
 ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
   scale_fill_manual(values = c("#E69F00", "#56B4E9","#999999"), guide = FALSE) +
@@ -247,6 +283,7 @@ ggplot(mv_cat_distance_all, aes(x = avg_visit_mv, y = distance, fill = distance)
   theme(panel.grid.minor = element_blank()) 
 
 
+# plots that shows the null distribution based on the simulation result
 null_mv_travel %>% 
   visualise() +
   shade_p_value(obs_stat = diff_cat_distance, direction = "right") + 
@@ -255,10 +292,6 @@ null_mv_travel %>%
        subtitle = "Red line shows observed variation of margin of victory") +
   theme_minimal() +
   theme(panel.grid.minor = element_blank()) 
-
-
-
-
-
+```
 
 

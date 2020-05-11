@@ -1,5 +1,5 @@
 ---
-title: "Rankings Visualizations"
+title: "EP nd Rankings Visualizations"
 author: "Lizette Carpenter"
 date: "4/24/2020"
 output:
@@ -15,6 +15,7 @@ output:
 library(tidyverse)
 library(janitor)
 library(lubridate)
+library(ggridges)
 ```
 
 # Data Wrangling: 
@@ -139,11 +140,14 @@ nfl_elo <- read.csv("nfl_elo.csv") %>%
 ```
 
 ## full_with_elo 
+
+Combines NFL data (games and pbp) with FiveThirtyEight Elo data
 ```{r}
-for_elo <- data %>% 
+for_elo <- fulldata_with_thurs %>% 
   select(game_key,
          season,
          season_type,
+         game_clock,
          game_number,
          week,
          game_date,
@@ -151,8 +155,8 @@ for_elo <- data %>%
          home_club_code,
          visitor_club_code,
          possession_team,
-         ep) %>% 
-  distinct(game_key, .keep_all = TRUE)
+         ep,
+         is_thurs)
 
 #full_with_elo 
 full_with_elo= merge(nfl_elo, 
@@ -206,8 +210,8 @@ afc <- full_with_elo %>%
 ep_blt_vs_pit <- full_with_elo %>% 
   filter(home_club_code %in% c("BLT","PIT"),
          visitor_club_code %in% c("BLT", "PIT"),
-         season.y == "2010") %>%
-  select(game_key, date, season.y, game_clock, possession_team, ep) 
+         season.x == "2010") %>%
+  select(game_key, date, season.x, game_clock, possession_team, ep) 
 ```
 
 ```{r}
@@ -226,8 +230,8 @@ blt_vs_pit_2010
 team_dep <- function(team, year) { 
   dep_data <- full_with_elo %>% 
     filter(home_club_code == team,
-           season.y == year) %>% 
-    select(game_key, date, season.y, game_clock, possession_team, ep)
+           season.x == year) %>% 
+    select(game_key, date, season.x, game_clock, possession_team, ep)
   
   dep_plot <- ggplot(data = dep_data, aes(x = game_clock, y = ep, color = possession_team)) +
     geom_line() + 
@@ -244,23 +248,24 @@ team_dep <- function(team, year) {
 team_dep("BLT", "2010")
 ```
 
-## Using Elo Ratings 
+## EDA: Using Elo Ratings 
 
 ### 1. Pittsburg's Elo Rating Before Games in 2019 (as home team)
 
 ```{r}
 pit_full_home <- full_with_elo %>%
   filter(home_club_code == "PIT", 
-         season.y == "2019") 
+         season.x == "2019") 
 ```
 
 ```{r}
-pit_home_elo <- ggplot(data = pit_full_home, aes(x = date, y = elo1_pre)) +
+pit_home_elo <- ggplot(data = pit_full_home, aes(x = as.numeric(week), y = elo1_pre)) +
+  geom_point(aes(color = "Thursday"), size = 2, alpha = 0.6) +
   geom_line() + 
-  geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
   theme_bw() +
   geom_text(aes(label=visitor_club_code), hjust=0, vjust=0) +
-  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the home team.") 
+  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the home team.") + 
+  labs(x = "week", y="Winning Probability") 
 pit_home_elo
 ```
 
@@ -270,18 +275,20 @@ pit_home_elo
 ```{r}
 pit_full_visitor <- full_with_elo %>%
   filter(visitor_club_code == "PIT", 
-         season.y == "2019") 
+         season.x == "2019") 
 ```
 
 ```{r}
-pit_visitor_elo <- ggplot(data = pit_full_visitor, aes(x = date, y = elo2_pre)) +
+pit_visitor_elo <- ggplot(data = pit_full_visitor, aes(x = as.numeric(week), y = elo2_pre)) +
   geom_line() + 
   geom_point(aes(color = is_thurs), size = 2, alpha = 0.6) +
   theme_bw() +
   geom_text(aes(label=home_club_code), hjust=0, vjust=0) +
-  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the visitor team.") 
+  ggtitle(label = "Pittsburg's Elo Rating Before Games in 2019", subtitle = "as the visitor team.") + 
+  labs(x = "week", y="Winning Probability")
 pit_visitor_elo
 ```
+
 ### 3. Change in Elo of Home and Visitor Team in a Game. 
 
 ```{r}
@@ -290,7 +297,6 @@ ggplot(data = full_with_elo, aes(x = elo1_pre)) +
   ggtitle("Distribution of Home ELO")
 ```
 
-
 #plot epa on thurs vs sunday - density
 ```{r}
 ggplot(data =   full_with_elo, aes(x = elo2_pre)) +
@@ -298,7 +304,12 @@ ggplot(data =   full_with_elo, aes(x = elo2_pre)) +
   ggtitle("Distribution of Home ELO by gameday") 
 ```
 
-
+```{r}
+full_with_elo %>% 
+  distinct(game_key, .keep_all = TRUE) %>% 
+  arrange(home_club_code) %>% 
+  filter(season.x == "2019")
+```
 
 ```{r}
 elo_afc <- full_with_elo %>% 
@@ -381,11 +392,3 @@ elo_win_afc_plot
 ```
 
 
-```{r}
-thurs_count <- full_with_elo %>% 
-  select(game_date, home_club_code, game_day, season.x, elo_prob1) %>% 
-  distinct(game_date, .keep_all = TRUE) %>% 
-  group_by(home_club_code, season.x, game_day) %>% 
-  tally() %>% 
-  arrange(home_club_code,season.x)
-```

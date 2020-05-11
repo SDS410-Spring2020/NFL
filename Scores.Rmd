@@ -134,6 +134,7 @@ data_with_scores <- fulldata %>%
       case_when(
         is_scoring_play == 0 ~ 0, 
         TRUE ~ as.double(visitor_score_after_play))) %>% 
+  group_by(game_clock) %>% 
   #Filters out home/visitor_score_after_play with values that have 0.
   filter(!home_score_after_play == 0,
          !visitor_score_after_play == 0) %>%
@@ -274,29 +275,3 @@ summary <- function(Season, Team) {
 summary("2019", "SEA")
 ```
 
-How many scoring plays in a game? 
-How many scoring plays in a season? 
-- include game clock of each scoring play 
-- include the scoreboard at each scoring play
-- include each margin of victory for each game 
-What is the percentage of scoring plays in a game? 
-Biggest margin of victory 
-
-organization: 
-Season Record 
-Team: SEA 
-week 1  | game day | home | visitor | # of home scoring plays | # of visitor scoring plays | home_final | visitor_final | margin of victory
-.
-.
-.
-week 16  
-Game Record 
-week | game day | game clock | home | visitor | scoring play | | margin of victory
-
-```{r}
-
-```
-
-Issue: missing scoring play 
-- find first scoring play in a game 
-- leave value of 0 in defensive team record 

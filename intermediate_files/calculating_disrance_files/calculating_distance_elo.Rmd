@@ -1,0 +1,705 @@
+---
+title: "Calculating Distance and Elo Ranking"
+author: "Aoi Ogawa and Lizette Carpenter"
+date: "2/28/2020"
+output:
+  html_document: 
+      toc: true
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+# importing libraries
+#library(datasets)
+library(maps)
+library(tidyr)
+library(tidyverse)
+library(readr)
+library(geosphere)
+library(sp)
+library(leaflet) 
+library(magrittr)
+library(janitor)
+library(ggridges)
+library(dplyr)
+library(lubridate)
+```
+
+```{r}
+library(datasets)
+library(scales)
+library(infer)
+```
+
+```{r}
+set.seed(1234)
+```
+
+
+#Importing Data 
+```{r, include=FALSE}
+# importing data
+#games<-read.csv("data/games_Smith.csv")
+#pbp<-read.csv("data/pbp_Smith.csv")
+#stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv")
+#visit_team_data <- read.csv("visit_team_data.csv")
+#ns_data_coordinates <- read.csv("Ns_data_coordinates.csv")
+#all_data_coordinates <- read.csv("All_data_coordinates.csv")
+```
+
+## games
+```{r, include=FALSE}
+# importing data
+games <-read.csv("data/games_Smith.csv") %>% 
+  clean_names() %>%
+  mutate(game_date = str_replace(game_date, "T00:00:00Z", ""),
+         game_date = as.Date(game_date, "%Y-%m-%d")) 
+```
+
+## pbp
+```{r}
+pbp<-read.csv("data/pbp_Smith.csv") %>% 
+  clean_names() %>% 
+  mutate(
+    game_clock = as.numeric(as.period(ms(game_clock), unit = "sec")),
+    game_clock = 
+      case_when(quarter == 1 ~ game_clock,
+                quarter == 2 ~ game_clock + 900,
+                quarter == 3 ~ game_clock + 1800,
+                quarter == 4 ~ game_clock + 2700,
+                quarter == 5 ~ game_clock + 3600))
+```
+
+## data (games + pbp) 
+```{r}
+data <- games %>% 
+  left_join(pbp, by="game_key")
+#note: NAs for 2007-2010 in pbp
+```
+
+## stadium_data_coordinates 
+```{r}
+#cleaning df column names to have a common variable with games (home_team)
+stadium_data_coordinates <- read.csv("stadium_data_coordinates.csv") %>% 
+  clean_names() 
+```
+
+## visit_team_data 
+```{r}
+visit_team_data <- read.csv("visit_team_data.csv") 
+``` 
+
+## games_w_coordinates (games + stadium_data_coordinates) 
+```{r}
+# games_w_coordinates = games + stadium_data_coordinates 
+games_w_coordinates <- games %>%
+  inner_join(stadium_data_coordinates)
+```
+
+# games_w_coordinates (games + stadium_data_coordinates + visit_team_data)   
+```{r}
+# games_w_coordinates = games + stadium_data_coordinates + visit_team_data  
+games_w_coordinates <- visit_team_data %>%
+  clean_names() %>% 
+  inner_join(games_w_coordinates)  
+
+# clean games_w_coordinates 
+games_w_coordinates <- games_w_coordinates %>%
+  mutate(num = NULL) %>%
+  rename(home_lat = longitude,
+         home_long = latitude) 
+```
+```{r}
+stats <- pbp %>% 
+  summarise(min = min(game_key),
+            max = max(game_key))
+```
+
+## fulldata_with_thurs (cleaning classes of data w/ is_thurs) 
+```{r}
+fulldata_with_thurs <- data %>%
+  filter(game_key >= 54816 & game_key <= 58155) %>% 
+  mutate(is_thurs = ifelse(game_day == "Thursday", 1, 0)) %>% 
+  mutate(is_thurs = as.factor(is_thurs),
+         stadium = as.character(stadium),
+         home_team = as.character(home_team),
+         visit_team = as.character(visit_team),
+         location = as.character(location),
+         season = as.factor(season),
+         week = as.factor(week),
+         game_weather = as.character(game_weather),
+         wind_speed = as.character(wind_speed),
+         wind_direction = as.character(wind_direction),
+         quarter = as.factor(quarter),
+         play_description = as.character(play_description),
+         down = as.factor(down),
+         is_scoring_play = as.factor(is_scoring_play)) 
+```
+
+## nfl_elo
+```{r}
+nfl_elo <- read.csv("nfl_elo.csv") %>% 
+  clean_names() %>% 
+  rename(
+    home_club_code = team1, 
+    visitor_club_code = team2) %>% 
+  mutate(
+    game_date = as.Date(date, "%Y-%m-%d"), 
+    home_club_code = 
+      case_when(
+        as.character(home_club_code) == "HOU" ~ "HST",
+        as.character(home_club_code) == "LAR" ~ "SL",
+        as.character(home_club_code) == "WSH" ~ "WAS", 
+        as.character(home_club_code) == "CLE" ~ "CLV",
+        as.character(home_club_code) == "BAL" ~ "BLT",
+        as.character(home_club_code) == "ARI" ~ "ARZ",
+        as.character(home_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(home_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(home_club_code)), 
+    visitor_club_code = 
+      case_when(
+        as.character(visitor_club_code) == "HOU" ~ "HST",
+        as.character(visitor_club_code) == "LAR" ~ "SL",
+        as.character(visitor_club_code) == "WSH" ~ "WAS", 
+        as.character(visitor_club_code) == "CLE" ~ "CLV",
+        as.character(visitor_club_code) == "BAL" ~ "BLT",
+        as.character(visitor_club_code) == "ARI" ~ "ARZ",
+        as.character(visitor_club_code) == "LAC" & as.character(season) >= "2017" ~ "SD",
+        as.character(visitor_club_code) == "LAC" & as.character(season) <= "2016" ~ "LA",
+        TRUE ~ as.character(visitor_club_code)))
+```
+
+```{r}
+for_elo <- fulldata_with_thurs %>% 
+  select(
+    game_key,
+    season, 
+    game_number, 
+    week, 
+    game_date, 
+    game_day, 
+    home_club_code, 
+    visitor_club_code, 
+    ep, 
+    is_thurs) 
+```
+
+## full_with_elo 
+Combines NFL data (games and pbp) with FiveThirtyEight Elo data
+```{r}
+#full_with_elo 
+full_with_elo= merge(nfl_elo, 
+                     fulldata_with_thurs, 
+                     by.x= c("home_club_code", "visitor_club_code", "game_date"), 
+                     by.y= c("home_club_code", "visitor_club_code", "game_date"))
+
+full_with_elo <- full_with_elo %>% 
+  mutate(
+    season = season.x,
+    season.x = NULL, 
+    season.y = NULL,
+    is_home = ifelse(as.character(home_club_code) == as.character(possession_team), 1, 0),
+    is_visitor =
+      case_when(is_home == 1 ~ 0,
+                is_home == 0 ~ 1),
+    ep1 = 
+      case_when(
+        is_home == 1 ~ ep, 
+        is_home == 0 ~ 0),
+    ep2 = 
+      case_when(
+        is_visitor == 1 ~ ep,
+        is_visitor == 0 ~ 0)) %>% 
+  distinct(game_key, .keep_all = TRUE)
+# new variables ep1 and ep2: expected points for home team (ep1) and expected points for visitor team (ep2).
+# The expected points for only the possesion team changes play by play. The expected points for the defensive team would be 0.  
+# ep1 and ep2 lets us see the expected points for the possession team for each play in a game. 
+```
+
+```{r}
+# create domestic games df 
+domestic_games <- games_w_coordinates %>%
+  filter(
+    stadium != c(
+      'Wembley Stadium',
+      "Rogers Centre",
+      "Wembley",
+      "Twickenham",
+      "Estadio Azteca",
+      "Twickenham Stadium",
+      "Azteca Stadium",
+      "Tottenham Hotspur Stadium",
+      "Tottenham Hotspur"
+    )
+  )
+# create international games df 
+#international_games <- games_w_coordinates %>% 
+#  filter(
+#    stadium == c(
+#      'Wembley Stadium',
+#      "Rogers Centre",
+#      "Wembley",
+#      "Twickenham",
+#      "Estadio Azteca",
+#      "Twickenham Stadium",
+#      "Azteca Stadium",
+#      "Tottenham Hotspur Stadium",
+#      "Tottenham Hotspur"
+#    )
+#  )
+```
+
+###Calculating and Categorizing Distances Travlled for Away Games
+```{r}
+# calculate distance
+calc_domestic <- domestic_games %>% 
+  rowwise() %>%
+  mutate(distance_m = distCosine(c(home_long, home_lat),c(visit_long, visit_lat)),
+         distance_mile = distance_m*0.6214/1000)
+
+# categorize distances 
+calc_domestic <- calc_domestic %>%
+  mutate(
+    distance =
+      case_when(
+        distance_mile > 2000 ~ "very far",
+        distance_mile > 1000 ~ "far",
+        distance_mile <= 1000 ~ "close"
+      ),
+    color_dis =
+      case_when(
+        distance == "very far" ~ "red",
+        distance == "far" ~ "orange",
+        distance == "close" ~ "cyan"
+      ),
+    is_thurs =
+      ifelse(game_day == "Thursday", 1, 0),
+    stroke =
+      ifelse(is_thurs == '1', "8", "NULL"),
+    home_team = as.character(home_team),
+    visit_team = as.character(visit_team))
+```
+
+```{r}
+#WITHOUT ELO RANKINGS
+mapping_travel <- function(Season, Team) {
+  mapping_team <- calc_domestic %>%
+    filter(season == Season,
+           visit_team == Team) 
+   
+  travel_map <- mapping_team %>%
+    leaflet() %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    setView(-93.65, 42.0285, zoom = 4.3) %>%
+    addMarkers( ~ visit_long, ~ visit_lat) %>%
+    addMarkers( ~ home_long, ~ home_lat) %>%
+    addMarkers(
+      lng = mapping_team$visit_long,
+      lat = mapping_team$visit_lat,
+      label = mapping_team$visit_team,
+      labelOptions = labelOptions(noHide = T))
+  
+  for (i in 1:nrow(mapping_team)) {
+    travel_map <- travel_map %>%
+      addPolylines(
+        lat = c(mapping_team[i, ]$visit_lat,
+                mapping_team[i, ]$home_lat),
+        lng = c(mapping_team[i, ]$visit_long,
+                mapping_team[i, ]$home_long),
+        color = mapping_team[i, ]$color_dis,
+        dashArray = mapping_team[i,]$stroke
+      ) %>%
+      addMarkers(
+        lng = mapping_team[i, ]$home_long,
+        lat = mapping_team[i, ]$home_lat,
+        label = mapping_team[i, ]$home_team,
+        labelOptions = labelOptions(noHide = T)
+      )
+      # addMarkers(
+      #   lng = mapping_team[i, ]$home_long,
+      #   lat = mapping_team[i, ]$home_lat,
+      #   popup = paste(
+      #     mapping_team[i, ]$home_team,
+      #     "<br>",
+      #     mapping_team[i, ]$visit_team,
+      #     "Ranking:",
+      #     #round(mapping_team[i, ]$elo2_pre, digits = 0),
+      #     #"<br>",
+      #     #mapping_team[i, ]$home_team,
+      #     #"Ranking:",
+      #     #round(mapping_team[i, ]$elo1_pre, digits = 0),
+      #     #"<br>"
+      #   ),
+      #   options = popupOptions(closeButton = TRUE)
+      # )
+  }
+  
+  return(travel_map)
+  
+}
+mapping_travel("2016", "Los Angeles Rams")
+```
+
+### Adding Elo Rankings to Map 
+```{r}
+full_with_distances <- inner_join(full_with_elo, calc_domestic, by = c("home_team", "visit_team", "game_date"), copy = FALSE)
+
+#selecting necessary varaibles for calculations and rankings
+full_with_distances <- full_with_distances %>%
+  rename(
+    game_key = game_key.x, 
+    season_type = season_type.x, 
+    game_number = game_number.x,
+    week = week.x,
+    game_day = game_day.x, 
+    game_site = game_site.x, 
+    start_time = start_time.x, 
+    stadium = stadium.x,
+    location = location.x, 
+    turf = turf.x, 
+    time_zone = time_zone.x, 
+    game_length = game_length.x, 
+    game_weather = game_weather.x, 
+    temperature = temperature.x, 
+    humidity = humidity.x,
+    wind_speed = wind_speed.x,
+    wind_direction = wind_direction.x, 
+    wind_chill = wind_chill.x, 
+    distance = distance.x,
+    is_thurs = is_thurs.x, 
+    season = season.x) %>%
+  mutate(
+    game_key.x = NULL, 
+    game_key.y = NULL, 
+    season_type.x = NULL, 
+    season_type.y = NULL, 
+    game_number.x = NULL,
+    game_number.y = NULL, 
+    week.x = NULL,
+    week.y = NULL, 
+    game_day.x = NULL,
+    game_day.y = NULL, 
+    game_site.x = NULL,
+    game_site.y = NULL, 
+    start_time.x = NULL, 
+    start_time.y = NULL,
+    stadium_type.x = NULL,
+    stadium_type.y = NULL, 
+    location.x = NULL, 
+    location.y = NULL, 
+    stadium.x = NULL, 
+    stadium.y = NULL,
+    turf.x = NULL, 
+    turf.y = NULL, 
+    time_zone.x = NULL, 
+    time_zone.y = NULL, 
+    game_length.x = NULL, 
+    game_length.y = NULL, 
+    game_weather.x = NULL, 
+    game_weather.y = NULL,
+    temperature.x = NULL, 
+    temperature.y = NULL, 
+    humidity.x = NULL,
+    humidity.y = NULL,
+    wind_speed.x = NULL,
+    wind_speed.y = NULL,
+    wind_direction.x = NULL, 
+    wind_direction.y = NULL, 
+    wind_chill.x = NULL, 
+    wind_chill.y = NULL,
+    distance.x = NULL,
+    distance.y = NULL,
+    is_thurs.x = NULL, 
+    is_thurs.y = NULL,
+    season.x = NULL, 
+    season.y = NULL)
+```
+
+```{r}
+for_ranking <- full_with_distances %>%
+  select(
+    game_key,
+    season,
+    visit_long,
+    visit_lat,
+    home_long,
+    home_lat,
+    home_club_code, 
+    visitor_club_code, 
+    home_team,
+    visit_team,
+    color_dis,
+    elo1_pre,
+    elo2_pre,
+    elo_prob1, 
+    elo_prob2,
+    is_thurs)
+```
+
+```{r}
+mapping_travel <- function(Season, Team) {
+  #obtain all of visiting team's travel games in a given season 
+  mapping_team <- full_with_distances %>%
+    filter(season == Season,
+           visit_team == Team)
+  
+  #create leaflet map 
+  travel_map <- mapping_team %>%
+    leaflet() %>%
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    setView(-93.65, 42.0285, zoom = 4.3) %>%
+    addMarkers( ~ visit_long, ~ visit_lat) %>%
+    addMarkers( ~ home_long, ~ home_lat) %>%
+    addMarkers(
+      lng = mapping_team$visit_long,
+      lat = mapping_team$visit_lat,
+      label = mapping_team$visit_team,
+      labelOptions = labelOptions(noHide = T)
+    )
+  
+  for (i in 1:nrow(mapping_team)) {
+    travel_map <- travel_map %>%
+      addPolylines(
+        lat = c(mapping_team[i, ]$visit_lat,
+                mapping_team[i, ]$home_lat),
+        lng = c(mapping_team[i, ]$visit_long,
+                mapping_team[i, ]$home_long),
+        color = mapping_team[i, ]$color_dis,
+        dashArray = mapping_team[i,]$stroke
+      ) %>%
+      addTiles() %>%
+      addMarkers(
+        lng = mapping_team[i, ]$home_long,
+        lat = mapping_team[i, ]$home_lat,
+        popup = paste(
+          mapping_team[i, ]$home_team,
+          "<br>",
+          mapping_team[i, ]$visit_team,
+          "Ranking:",
+          round(mapping_team[i, ]$elo2_pre, digits = 0),
+          "<br>",
+          mapping_team[i, ]$home_team,
+          "Ranking:",
+          round(mapping_team[i, ]$elo1_pre, digits = 0),
+          "<br>"
+        ),
+        options = popupOptions(closeButton = TRUE)
+      )
+    travel_map
+  }
+  return(travel_map)
+}
+
+mapping_travel("2019", "Seattle Seahawks")
+```
+
+### Winning Probability Function 
+
+Pr(A) = 1 / 10 * (-Elo Difference / 400) + 1
+
+elo_prob1 | Home team's probability of winning according to Elo ratings
+elo_prob2 | Away team's probability of winning according to Elo ratings
+
+```{r}
+win_prob <- function(Season, Team) { 
+  
+  #obtain data
+  elo_rankings <- full_with_distances %>%
+    filter(season == Season, 
+           visit_team == Team) %>% 
+    mutate(elo_diff = abs(elo1_pre - elo2_pre), 
+           home_wp = 1/ (10 * (elo_diff/400) + 1)) %>% 
+    select(season,
+           home_team,
+           visit_team,
+           elo1_pre,
+           elo2_pre,
+           home_wp,
+           elo_prob1,
+           elo_prob2)
+  
+  return(elo_rankings)
+}
+
+win_prob("2019", "Seattle Seahawks")
+```
+
+```{r}
+# function to get sem
+se <- function(x) sqrt(var(x)/length(x))
+```
+
+```{r}
+elo_visitors <- for_ranking %>% 
+  filter(season >= 2007) %>% 
+  group_by(visitor_club_code, is_thurs) %>% 
+  summarise(n = n(),
+            sum = sum(elo2_pre), 
+            mean = sum / n, 
+            avg = mean(elo2_pre),
+            sem = se(elo2_pre))  %>% 
+  mutate(is_thurs = 
+           recode(is_thurs, 
+                  "1" = "Thursday games",
+                  "0" = "Not Thursday games"),
+         is_thurs = as.character(is_thurs))
+
+elo_visitors
+```
+
+```{r}
+elo_home <- for_ranking %>% 
+  filter(season >= 2007) %>% 
+  group_by(home_club_code, is_thurs) %>% 
+  summarise(n = n(),
+            sum = sum(elo1_pre), 
+            mean = sum / n, 
+            avg = mean(elo1_pre),
+            sem = se(elo1_pre)) %>% 
+    mutate(is_thurs = 
+           recode(is_thurs, 
+                  "1" = "Thursday games",
+                  "0" = "Not Thursday games"),
+         is_thurs = as.character(is_thurs))
+elo_home
+```
+
+```{r}
+#permutation test (HOME TEAMS)  
+#mean difference thurs - not thurs 
+diff_elo_home <- elo_home %>% 
+  specify(avg ~ is_thurs) %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+diff_elo_home
+
+#generate samples 
+null_elo_home <- elo_home %>% 
+  specify(avg ~ is_thurs) %>% 
+  hypothesize(null= "independence") %>% 
+  generate(reps = 5000, type = "permute") %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+null_elo_home
+
+null_elo_home %>% 
+  get_pvalue(obs_stat = diff_elo_home, direction = "both")
+null_elo_home
+
+# the p-value is 0.926, which means that there is a 9.26% chance of seeing a difference at least as large as 1.64 in a world where there is no difference 
+```
+
+```{r}
+#permutation test (VISITOR TEAMS)  
+#mean difference thurs - not thurs 
+diff_elo_visitor <- elo_visitors %>% 
+  specify(avg ~ is_thurs) %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+diff_elo_visitor
+
+#generate samples 
+null_elo_visitors <- elo_visitors %>% 
+  specify(avg ~ is_thurs) %>% 
+  hypothesize(null= "independence") %>% 
+  generate(reps = 5000, type = "permute") %>% 
+  calculate("diff in means", order = c("Not Thursday games", "Thursday games"))
+null_elo_visitors
+
+null_elo_visitors %>% 
+  get_pvalue(obs_stat = diff_elo_home, direction = "both")
+null_elo_visitors
+
+# the p-value is 0.926, which means that there is a 9.26% chance of seeing a difference at least as large as 1.64 in a world where there is no difference 
+```
+
+
+```{r,message=FALSE}
+ggplot(elo_home, aes(x = avg, y = is_thurs, fill = is_thurs)) +
+  stat_density_ridges(quantile_lines = TRUE,
+                      quantiles = 2, 
+                      scale = 3, 
+                      color = "white") + 
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"),
+                    guide = FALSE) +
+  labs(x = "Average Elo Ranking For Home Teams (2007 to 2019)", y = NULL) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+```
+
+```{r}
+null_elo_home %>% 
+  visualise() +
+  shade_p_value(obs_stat = diff_elo_home ,direction = "both") + 
+  labs(x = "Difference in Mean Elo For Home Teams \n(Not Thursday games − Thursday games)",
+       y = "Count",
+       subtitle = "Red line shows observed difference in elo ranking") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank()) 
+```
+
+```{r,message=FALSE}
+ggplot(elo_visitors, aes(x = avg, y = is_thurs, fill = is_thurs)) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
+  labs(x = "Average Elo Ranking For Visitor Teams (2007 to 2019)", y = NULL) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+```
+
+```{r}
+null_elo_visitors %>% 
+  visualise() +
+  shade_p_value(obs_stat = diff_elo_visitor ,direction = "both") + 
+  labs(x = "Difference in Mean Elo For Visitor Teams \n(Not Thursday games − Thursday games)",
+       y = "Count",
+       subtitle = "Red line shows observed difference in elo ranking") +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank()) 
+```
+
+
+```{r}
+# all_elo_avg_diff <- for_ranking %>% 
+#   filter(season >= 2007) %>% 
+#   mutate(diff = abs(elo1_pre - elo2_pre)) %>% 
+#   group_by(is_thurs) %>% 
+#   summarise(n = n(), 
+#             avg = mean(diff))
+# all_elo_avg_diff      
+# 
+# ggplot(all_elo_avg_diff, aes(x = avg, y = is_thurs, fill = is_thurs)) +
+#   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
+#   scale_fill_manual(values = c("#E69F00", "#56B4E9"), guide = FALSE) +
+#   labs(x = "Average difference in elo ranking between teams in games from 2007 to 2019", y = NULL) +
+#   theme_minimal() +
+#   theme(panel.grid.minor = element_blank())
+```
+
+```{r}
+elo_visitor_distance <- for_ranking %>% 
+  filter(season >= 2007) %>% 
+  group_by(visitor_club_code, color_dis) %>% 
+  summarise(n = n(),
+            sum = sum(elo2_pre), 
+            mean = sum / n, 
+            avg = mean(elo2_pre)) %>% 
+  mutate(color_dis = 
+           recode(color_dis, 
+                  "cyan" = "close \n less than 1000 mi",
+                  "orange" = "far \n less than 2000 mi ",
+                  "red" =  "very far \n greater than 2000 mi"))
+elo_visitor_distance 
+```
+
+```{r,message=FALSE}
+ggplot(elo_visitor_distance, aes(x = avg, y = color_dis, fill = color_dis)) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, scale = 3, color = "white") + 
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#FF95FF"), guide = FALSE) +
+  labs(x = "Average elo ranking from 2007 to 2019 \n For Visitor Teams", y = NULL) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+```
+
